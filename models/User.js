@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema({
         pushNotif: { type: Boolean, default: false },
         publicProfile: { type: Boolean, default: true },
         twoFactor: { type: Boolean, default: false }
+    },
+    modePreferences: {
+        defaultMode: { type: String, default: 'NORMAL_CHAT' },
+        autoDetect: { type: Boolean, default: true }
     }
 
 }, { timestamps: true });

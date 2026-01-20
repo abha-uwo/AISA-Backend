@@ -24,6 +24,7 @@ import supportRoutes from './routes/supportRoutes.js';
 import personalTaskRoutes from './routes/personalTaskRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
+import reminderRoutes from './routes/reminderRoutes.js';
 // import paymentRoutes from './routes/paymentRoutes.js';
 
 
@@ -100,6 +101,12 @@ app.use('/api/auth', authRoutes);
 
 // Voice Routes
 app.use('/api/voice', voiceRoutes);
+
+// Reminder Routes
+app.use('/api/reminders', reminderRoutes);
+
+// Support Routes
+app.use('/api/support', supportRoutes);
 
 
 // Global Error Handler

@@ -6,8 +6,11 @@ import userModel from "../models/User.js";
 import { verifyToken } from "../middleware/authorization.js";
 import { uploadToCloudinary } from "../services/cloudinary.service.js";
 import mammoth from "mammoth";
-
-
+import { detectMode, getModeSystemInstruction } from "../utils/modeDetection.js";
+import { detectIntent, extractReminderDetails, detectLanguage, getVoiceSystemInstruction } from "../utils/voiceAssistant.js";
+import Reminder from "../models/Reminder.js";
+import { requiresWebSearch, extractSearchQuery, processSearchResults, getWebSearchSystemInstruction } from "../utils/webSearch.js";
+import { performWebSearch } from "../services/searchService.js";
 
 
 
@@ -15,17 +18,32 @@ import mammoth from "mammoth";
 const router = express.Router();
 // Get all chat sessions (summary)
 router.post("/", async (req, res) => {
-  const { content, history, systemInstruction, image, document } = req.body;
+  const { content, history, systemInstruction, image, document, language } = req.body;
 
   try {
+    // Detect mode based on content and attachments
+    const allAttachments = [];
+    if (Array.isArray(image)) allAttachments.push(...image);
+    else if (image) allAttachments.push(image);
+    if (Array.isArray(document)) allAttachments.push(...document);
+    else if (document) allAttachments.push(document);
+
+    const detectedMode = detectMode(content, allAttachments);
+    const modeSystemInstruction = getModeSystemInstruction(detectedMode, language || 'English', {
+      fileCount: allAttachments.length
+    });
+
+    console.log(`[MODE DETECTION] Detected mode: ${detectedMode} for message: "${content?.substring(0, 50)}..."`);
+
     // Construct parts from history + current message
     let parts = [];
 
-    // Add system instruction if provided (as a user message with high priority or just prepend)
-    // Note: Vertex AI "generateContent" usually takes systemInstruction in config, but for per-request
-    // dynamic behavior with a static model instance, we can prepend it to the prompt.
-    if (systemInstruction) {
-      parts.push({ text: `System Instruction: ${systemInstruction}` });
+    // Use mode-specific system instruction, or fallback to provided systemInstruction
+    // Web search instruction takes priority if available
+    let finalSystemInstruction = systemInstruction || modeSystemInstruction;
+
+    if (finalSystemInstruction) {
+      parts.push({ text: `System Instruction: ${finalSystemInstruction}` });
     }
 
     // Add conversation history if available
@@ -94,6 +112,64 @@ router.post("/", async (req, res) => {
       }
     }
 
+    // Voice Assistant: Detect intent for reminder/alarm
+    const userIntent = detectIntent(content);
+    const detectedLanguage = detectLanguage(content);
+    let reminderData = null;
+    let voiceConfirmation = '';
+
+    console.log(`[VOICE ASSISTANT] Intent: ${userIntent}, Language: ${detectedLanguage}`);
+
+    // If intent is reminder/alarm related, extract details and create reminder
+    if (userIntent !== 'casual_chat' && userIntent !== 'clarification_needed') {
+      try {
+        reminderData = extractReminderDetails(content);
+        console.log('[VOICE ASSISTANT] Reminder details:', reminderData);
+
+        // Generate voice-friendly confirmation
+        const time = new Date(reminderData.datetime).toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        const date = new Date(reminderData.datetime).toLocaleDateString('en-IN');
+
+        if (detectedLanguage === 'Hinglish' || detectedLanguage === 'Hindi') {
+          voiceConfirmation = `Okay, main ${time} par ${reminderData.alarm ? 'alarm aur ' : ''}${reminderData.voice ? 'voice ke saath ' : ''}reminder set kar dungi`;
+        } else {
+          voiceConfirmation = `Okay, I'll set a ${reminderData.alarm ? 'alarm and ' : ''}${reminderData.voice ? 'voice ' : ''}reminder for ${time}`;
+        }
+      } catch (error) {
+        console.error('[VOICE ASSISTANT] Error extracting reminder:', error);
+      }
+    }
+
+    // Web Search: Check if query requires real-time information
+    let searchResults = null;
+    let webSearchInstruction = '';
+
+    if (requiresWebSearch(content)) {
+      console.log('[WEB SEARCH] Query requires real-time information');
+
+      try {
+        const searchQuery = extractSearchQuery(content);
+        console.log(`[WEB SEARCH] Searching for: "${searchQuery}"`);
+
+        const rawSearchData = await performWebSearch(searchQuery, 5);
+
+        if (rawSearchData) {
+          searchResults = processSearchResults(rawSearchData);
+          console.log(`[WEB SEARCH] Found ${searchResults.snippets.length} results`);
+
+          // Override system instruction with web search instruction
+          webSearchInstruction = getWebSearchSystemInstruction(searchResults, language || 'English');
+        } else {
+          console.warn('[WEB SEARCH] No search results found');
+        }
+      } catch (error) {
+        console.error('[WEB SEARCH] Error performing search:', error);
+      }
+    }
 
     // For Google Generative AI SDK, we pass the parts directly (or a prompt string) as the "contents".
     // It accepts an array of Content objects, or a simple string/array of parts.
