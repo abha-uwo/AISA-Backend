@@ -20,7 +20,14 @@ import axios from 'axios';
 import { apis } from '../types';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { detectMode, getModeName, getModeIcon, getModeColor } from '../utils/modeDetection';
 
+
+const WELCOME_MESSAGE = `Hello! I’m AISA, your Artificial Intelligence Super Assistant.
+
+I am designed to be your powerful personal companion for creativity, productivity, and problem-solving. Whether you need help with writing, coding, analyzing documents, or just finding answers, I'm here to assist you.
+
+How can I help you today?`;
 
 const FEEDBACK_PROMPTS = {
   en: [
@@ -119,6 +126,8 @@ const Chat = () => {
   const recognitionRef = useRef(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [selectedToolType, setSelectedToolType] = useState(null);
+  const [currentMode, setCurrentMode] = useState('NORMAL_CHAT');
+  const abortControllerRef = useRef(null);
 
   // Close menu on click outside
   useEffect(() => {
@@ -288,7 +297,12 @@ const Chat = () => {
         setMessages(history);
       } else {
         setCurrentSessionId('new');
-        setMessages([]);
+        setMessages([{
+          id: 'welcome-msg',
+          role: 'model',
+          content: WELCOME_MESSAGE,
+          timestamp: Date.now()
+        }]);
       }
 
       setShowHistory(false);
@@ -296,8 +310,22 @@ const Chat = () => {
     initChat();
   }, [sessionId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const chatContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // Tighter threshold (50px) - if user scrolls up slightly, auto-scroll stops
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+      shouldAutoScrollRef.current = isNearBottom;
+    }
+  };
+
+  const scrollToBottom = (force = false, behavior = 'auto') => {
+    if (force || shouldAutoScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
   };
 
   useEffect(() => {
@@ -305,8 +333,7 @@ const Chat = () => {
   }, [messages, isLoading]);
 
   const handleNewChat = async () => {
-    const newId = await chatStorageService.createSession();
-    navigate(`/dashboard/chat/${newId}`);
+    navigate('/dashboard/chat/new');
     setShowHistory(false);
   };
 
@@ -379,7 +406,13 @@ const Chat = () => {
 
       const updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
+      scrollToBottom(true, 'smooth'); // Force smooth scroll for user message
       setInputValue('');
+
+      // Detect mode for UI indicator
+      const detectedMode = detectMode(contentToSend, userMsg.attachments);
+      setCurrentMode(detectedMode);
+
       handleRemoveFile(); // Clear file after sending
       setIsLoading(true);
 
@@ -395,37 +428,32 @@ const Chat = () => {
 
         // Send to AI for response
         const caps = getAgentCapabilities(activeAgent.agentName, activeAgent.category);
+
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+
         const SYSTEM_INSTRUCTION = `
 You are ${activeAgent.agentName || 'AISA'}, an advanced AI assistant powered by A-Series.
 ${activeAgent.category ? `Your specialization is in ${activeAgent.category}.` : ''}
-
-### FIRST MESSAGE / GREETING LOGIC (CRITICAL):
-Determine if the user's first message is a simple greeting or a specific question.
-
-**Scenario 1: Simple Greeting / Unclear Intent**
-(e.g., "Hello", "Hi", "Aisa", "Start", ".")
-1. **Welcome**: "Hello... welcome to ${activeAgent.agentName || 'AISA'}" (Translate to user's language).
-2. **Intro**: Briefly describe yourself as a specialized AI agent in the ${activeAgent.category || 'General'} category on A-Series.
-3. **Guide**: You MUST present the "Quick Links" below to help them explore categories:
-   - * [Business OS](/dashboard/marketplace?category=Business%20OS)
-   - * [Data & Intelligence](/dashboard/marketplace?category=Data%20%26%20Intelligence)
-   - * [Sales & Marketing](/dashboard/marketplace?category=Sales%20%26%20Marketing)
-   - * [HR & Finance](/dashboard/marketplace?category=HR%20%26%20Finance)
-   - * [Design & Creative](/dashboard/marketplace?category=Design%20%26%20Creative)
-   - * [Medical & Health AI](/dashboard/marketplace?category=Medical%20%26%20Health%20AI)
-   - * [View All Agents](/dashboard/marketplace)
-
-**Scenario 2: Specific Question / Clear Intent**
-(e.g., "Hello, what is a computer?", "Analyze my file", "How to grow business?")
-1. **Acknowledge**: Start with a brief "Hello... welcome to ${activeAgent.agentName || 'AISA'}. I'd be happy to help with that."
-2. **Direct Answer**: Answer the user's question directly.
-3. **STRICT RULE**: DO NOT show the "Quick Links" list or describe categories. Focus ONLY on the answer.
 
 ### CRITICAL LANGUAGE RULE:
 **ALWAYS respond in the SAME LANGUAGE as the user's message.**
 - If user writes in HINDI (Devanagari or Romanized), respond in HINDI.
 - If user writes in ENGLISH, respond in ENGLISH.
 - If user mixes languages, prioritize the dominant language.
+
+### RESPONSE BEHAVIOR:
+- Answer the user's question directly without greeting messages
+- Do NOT say "Hello... welcome to AISA" or similar greetings
+- Focus ONLY on providing the answer to what user asked
+- Be helpful, clear, and concise
+
+### STREAMING BEHAVIOR:
+- Generate responses in smooth, continuous stream
+- Use short paragraphs for readability
+- If interrupted, stop immediately without completing sentence
+- Do NOT add summaries or closing lines after interruption
+- Resume ONLY if user explicitly asks again
 
 ### MULTI-FILE ANALYSIS MANDATE (STRICT 1:1 RULE):
 You have received exactly ${filePreviews.length} file(s).
@@ -467,7 +495,14 @@ ${caps.canUploadDocs ? `DOCUMENT ANALYSIS CAPABILITIES:
 ${activeAgent.instructions ? `SPECIFIC AGENT INSTRUCTIONS:
 ${activeAgent.instructions}` : ''}
 `;
-        const aiResponseText = await generateChatResponse(messages, userMsg.content, SYSTEM_INSTRUCTION, userMsg.attachments, currentLang);
+        const aiResponseText = await generateChatResponse(
+          messages,
+          userMsg.content,
+          SYSTEM_INSTRUCTION,
+          userMsg.attachments,
+          currentLang,
+          abortControllerRef.current.signal
+        );
 
         // Check for multiple file analysis headers to split into separate cards
         const delimiter = '---SPLIT_RESPONSE---';
@@ -480,8 +515,7 @@ ${activeAgent.instructions}` : ''}
           responseParts = [aiResponseText || "No response generated."];
         }
 
-        setIsLoading(false); // Stop main loader once we have the response
-
+        // Process response parts and add to messages
         for (let i = 0; i < responseParts.length; i++) {
           const partContent = responseParts[i];
           if (!partContent) continue;
@@ -506,6 +540,9 @@ ${activeAgent.instructions}` : ''}
           const delay = words.length > 200 ? 10 : (words.length > 50 ? 20 : 35);
 
           for (let j = 0; j < words.length; j++) {
+            // Check if generation was stopped by user
+            if (!isSendingRef.current) break;
+
             displayedContent += (j === 0 ? '' : ' ') + words[j];
 
             // Update UI with the current chunk
@@ -515,26 +552,36 @@ ${activeAgent.instructions}` : ''}
 
             // Wait before next word
             await new Promise(resolve => setTimeout(resolve, delay));
-
-            // Scroll occasionally during typing
-            if (j % 5 === 0) scrollToBottom();
           }
-
-          setTypingMessageId(null); // Clear typing status
-          // After typing is complete, save the full message to history
-          await chatStorageService.saveMessage(activeSessionId, { ...modelMsg, content: partContent });
-          scrollToBottom();
         }
+
+        if (!isSendingRef.current) {
+          setTypingMessageId(null);
+          return; // Exit function if stopped
+        }
+
+        setTypingMessageId(null); // Clear typing status
+        // After typing is complete, save the full message to history
+        await chatStorageService.saveMessage(activeSessionId, { ...modelMsg, content: partContent });
+        scrollToBottom();
       } catch (innerError) {
         console.error("Storage/API Error:", innerError);
         // Even if saving failed, we still have the local state
       }
     } catch (error) {
+      // Handle abort errors silently (user stopped generation)
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        console.log('Generation stopped by user');
+        // Keep partial response, don't show error
+        return;
+      }
+
       console.error("Chat Error:", error);
       toast.error(`Error: ${error.message || "Failed to send message"}`);
     } finally {
       setIsLoading(false);
       isSendingRef.current = false;
+      abortControllerRef.current = null; // Clean up abort controller
     }
   };
 
@@ -1643,6 +1690,18 @@ For "Remix" requests with an attachment, analyze the attached image, then create
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Mode Indicator */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: `${getModeColor(currentMode)}15`,
+                color: getModeColor(currentMode)
+              }}
+            >
+              <span>{getModeIcon(currentMode)}</span>
+              <span className="hidden sm:inline">{getModeName(currentMode)}</span>
+            </div>
+
             {/* <button className="flex items-center gap-2 text-subtext hover:text-maintext text-sm">
               <Monitor className="w-4 h-4" />
               <span className="hidden sm:inline">Device</span>
@@ -1652,7 +1711,11 @@ For "Remix" requests with an attachment, analyze the attached image, then create
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-5 space-y-2.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-5 space-y-2.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+        >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-70 px-4">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6">
@@ -1694,9 +1757,9 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                       } max-w-[85%] sm:max-w-[80%]`}
                   >
                     <div
-                      className={`group/bubble relative px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm w-fit max-w-full transition-all duration-300 ${msg.role === 'user'
-                        ? 'bg-primary text-white rounded-tr-none'
-                        : `bg-surface border border-border text-maintext rounded-tl-none ${msg.id === typingMessageId ? 'ai-typing-glow ai-typing-shimmer outline outline-offset-1 outline-primary/20' : ''}`
+                      className={`group/bubble relative px-4 py-2 rounded-2xl text-sm leading-normal whitespace-pre-wrap break-words shadow-sm w-fit max-w-full transition-all duration-300 min-h-[40px] ${msg.role === 'user'
+                        ? 'bg-primary text-white rounded-tr-none flex items-center px-5 py-3 rounded-3xl'
+                        : `bg-surface border border-border text-maintext rounded-tl-none block ${msg.id === typingMessageId ? 'ai-typing-glow ai-typing-shimmer outline outline-offset-1 outline-primary/20' : ''}`
                         }`}
                     >
 
@@ -1838,7 +1901,7 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                                     </a>
                                   );
                                 },
-                                p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+                                p: ({ children }) => <p className={`mb-1.5 last:mb-0 ${msg.role === 'user' ? 'm-0 leading-normal' : 'leading-relaxed'}`}>{children}</p>,
                                 ul: ({ children }) => <ul className="list-disc pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ul>,
                                 ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 last:mb-0 space-y-1.5 marker:text-subtext">{children}</ol>,
                                 li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
@@ -1919,106 +1982,108 @@ For "Remix" requests with an attachment, analyze the attached image, then create
 
                       {/* AI Feedback Actions */}
                       {msg.role !== 'user' && (
-                        <div className="mt-1 pt-2 border-t border-transparent">
-                          {(() => {
-                            // Detect if the AI response contains Hindi (Devanagari script)
-                            const isHindiContent = /[\u0900-\u097F]/.test(msg.content);
-                            const prompts = isHindiContent ? FEEDBACK_PROMPTS.hi : FEEDBACK_PROMPTS.en;
-                            const promptIndex = (msg.id.toString().charCodeAt(msg.id.toString().length - 1) || 0) % prompts.length;
-                            return (
-                              <p className="text-sm text-maintext mb-2 flex items-center gap-1">
-                                {prompts[promptIndex]}
-                                <span className="text-base">😊</span>
-                              </p>
-                            );
-                          })()}
-                          <div className="flex items-center gap-4">
-                            <button
-                              onClick={() => handleCopyMessage(msg.content)}
-                              className="text-subtext hover:text-maintext transition-colors"
-                              title="Copy"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleThumbsUp(msg.id)}
-                              className="text-subtext hover:text-primary transition-colors"
-                              title="Helpful"
-                            >
-                              <ThumbsUp className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleThumbsDown(msg.id)}
-                              className="text-subtext hover:text-red-500 transition-colors"
-                              title="Not Helpful"
-                            >
-                              <ThumbsDown className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleShare(msg.content)}
-                              className="text-subtext hover:text-primary transition-colors"
-                              title="Share Text"
-                            >
-                              <Share className="w-4 h-4" />
-                            </button>
-
-                            {/* PDF Menu */}
-                            <Menu as="div" className="relative inline-block text-left">
-                              <Menu.Button className="text-subtext hover:text-red-500 transition-colors flex items-center" disabled={pdfLoadingId === msg.id}>
-                                {pdfLoadingId === msg.id ? (
-                                  <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
-                                ) : (
-                                  <FileText className="w-4 h-4" />
-                                )}
-                              </Menu.Button>
-                              <Transition
-                                as={Fragment}
-                                enter="transition ease-out duration-100"
-                                enterFrom="transform opacity-0 scale-95"
-                                enterTo="transform opacity-100 scale-100"
-                                leave="transition ease-in duration-75"
-                                leaveFrom="transform opacity-100 scale-100"
-                                leaveTo="transform opacity-0 scale-95"
+                        <div className="mt-4 pt-3 border-t border-border/40 w-full block">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                            {(() => {
+                              // Detect if the AI response contains Hindi (Devanagari script)
+                              const isHindiContent = /[\u0900-\u097F]/.test(msg.content);
+                              const prompts = isHindiContent ? FEEDBACK_PROMPTS.hi : FEEDBACK_PROMPTS.en;
+                              const promptIndex = (msg.id.toString().charCodeAt(msg.id.toString().length - 1) || 0) % prompts.length;
+                              return (
+                                <p className="text-xs text-subtext font-medium flex items-center gap-1.5 shrink-0 m-0">
+                                  {prompts[promptIndex]}
+                                  <span className="text-sm">😊</span>
+                                </p>
+                              );
+                            })()}
+                            <div className="flex items-center gap-3 self-end sm:self-auto">
+                              <button
+                                onClick={() => handleCopyMessage(msg.content)}
+                                className="text-subtext hover:text-maintext transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                                title="Copy"
                               >
-                                <Menu.Items className="absolute bottom-full left-0 mb-2 w-36 origin-bottom-left divide-y divide-border rounded-xl bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
-                                  <div className="px-1 py-1">
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => handlePdfAction('open', msg)}
-                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
-                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
-                                        >
-                                          Open PDF
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => handlePdfAction('download', msg)}
-                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
-                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
-                                        >
-                                          Download
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                      {({ active }) => (
-                                        <button
-                                          onClick={() => handlePdfAction('share', msg)}
-                                          className={`${active ? 'bg-primary text-white' : 'text-maintext'
-                                            } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
-                                        >
-                                          Share PDF
-                                        </button>
-                                      )}
-                                    </Menu.Item>
-                                  </div>
-                                </Menu.Items>
-                              </Transition>
-                            </Menu>
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleThumbsUp(msg.id)}
+                                className="text-subtext hover:text-primary transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                                title="Helpful"
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleThumbsDown(msg.id)}
+                                className="text-subtext hover:text-red-500 transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                                title="Not Helpful"
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleShare(msg.content)}
+                                className="text-subtext hover:text-primary transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                                title="Share Text"
+                              >
+                                <Share className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* PDF Menu */}
+                              <Menu as="div" className="relative inline-block text-left">
+                                <Menu.Button className="text-subtext hover:text-red-500 transition-colors flex items-center" disabled={pdfLoadingId === msg.id}>
+                                  {pdfLoadingId === msg.id ? (
+                                    <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                                  ) : (
+                                    <FileText className="w-4 h-4" />
+                                  )}
+                                </Menu.Button>
+                                <Transition
+                                  as={Fragment}
+                                  enter="transition ease-out duration-100"
+                                  enterFrom="transform opacity-0 scale-95"
+                                  enterTo="transform opacity-100 scale-100"
+                                  leave="transition ease-in duration-75"
+                                  leaveFrom="transform opacity-100 scale-100"
+                                  leaveTo="transform opacity-0 scale-95"
+                                >
+                                  <Menu.Items className="absolute bottom-full left-0 mb-2 w-36 origin-bottom-left divide-y divide-border rounded-xl bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
+                                    <div className="px-1 py-1">
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={() => handlePdfAction('open', msg)}
+                                            className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                              } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                          >
+                                            Open PDF
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={() => handlePdfAction('download', msg)}
+                                            className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                              } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                          >
+                                            Download
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                      <Menu.Item>
+                                        {({ active }) => (
+                                          <button
+                                            onClick={() => handlePdfAction('share', msg)}
+                                            className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                              } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                          >
+                                            Share PDF
+                                          </button>
+                                        )}
+                                      </Menu.Item>
+                                    </div>
+                                  </Menu.Items>
+                                </Transition>
+                              </Menu>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -2309,13 +2374,35 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                     </>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={(!inputValue.trim() && filePreviews.length === 0) || isLoading}
-                    className="p-2 sm:p-2.5 rounded-full bg-primary text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                  {/* Send / Stop Button */}
+                  {isLoading ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('Stop button clicked');
+                        if (abortControllerRef.current) {
+                          abortControllerRef.current.abort();
+                        }
+                        // Immediately stop loading state for instant UI feedback
+                        setIsLoading(false);
+                        isSendingRef.current = false;
+                      }}
+                      className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-md flex items-center justify-center"
+                      title="Stop generation"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <rect x="6" y="6" width="8" height="8" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={(!inputValue.trim() && filePreviews.length === 0) || isLoading}
+                      className="p-2 sm:p-2.5 rounded-full bg-primary text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
