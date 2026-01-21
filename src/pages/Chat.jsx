@@ -2195,7 +2195,171 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                                     title="Download"
                                   >
                                     <Download className="w-4 h-4" />
+<<<<<<< HEAD
                                   </button>
+=======
+                                    <span className="text-[10px] font-bold uppercase">Download</span>
+                                  </div>
+                                </button>
+                              </div>
+                            )
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )
+                  )}
+
+                  {/* File conversion download button */}
+                  {msg.conversion && msg.conversion.file && (
+                    <div className="mt-4 pt-3 border-t border-border/40 w-full block">
+                      <button
+                        onClick={() => {
+                          const byteCharacters = atob(msg.conversion.file);
+                          const byteNumbers = new Array(byteCharacters.length);
+                          for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                          }
+                          const byteArray = new Uint8Array(byteNumbers);
+                          const blob = new Blob([byteArray], { type: msg.conversion.mimeType });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = msg.conversion.fileName;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl transition-all group w-full"
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-blue-50 text-blue-600'
+                          }`}>
+                          {msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                            ? <FileText className="w-5 h-5" />
+                            : <File className="w-5 h-5" />
+                          }
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-[15px] font-bold text-primary transition-colors mb-0.5">
+                            {msg.conversion.fileName}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-xs font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md border ${msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                              ? 'text-primary bg-primary/10 border-primary/20'
+                              : 'text-primary bg-primary/10 border-primary/20'
+                              }`}>
+                              Click here to download {msg.conversion.fileName.split('.').pop().toLowerCase()}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* AI Feedback Actions */}
+                  {msg.role !== 'user' && (
+                    <div className="mt-4 pt-3 border-t border-border/40 w-full block">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                        {(() => {
+                          // Detect if the AI response contains Hindi (Devanagari script)
+                          const isHindiContent = /[\u0900-\u097F]/.test(msg.content);
+                          const prompts = isHindiContent ? FEEDBACK_PROMPTS.hi : FEEDBACK_PROMPTS.en;
+                          const promptIndex = (msg.id.toString().charCodeAt(msg.id.toString().length - 1) || 0) % prompts.length;
+                          return (
+                            <p className="text-xs text-subtext font-medium flex items-center gap-1.5 shrink-0 m-0">
+                              {prompts[promptIndex]}
+                              <span className="text-sm">😊</span>
+                            </p>
+                          );
+                        })()}
+                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                          <button
+                            onClick={() => handleCopyMessage(msg.content)}
+                            className="text-subtext hover:text-maintext transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                            title="Copy"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleThumbsUp(msg.id)}
+                            className="text-subtext hover:text-primary transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                            title="Helpful"
+                          >
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleThumbsDown(msg.id)}
+                            className="text-subtext hover:text-red-500 transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                            title="Not Helpful"
+                          >
+                            <ThumbsDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleShare(msg.content)}
+                            className="text-subtext hover:text-primary transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                            title="Share Text"
+                          >
+                            <Share className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* PDF Menu */}
+                          <Menu as="div" className="relative inline-block text-left">
+                            <Menu.Button className="text-subtext hover:text-red-500 transition-colors flex items-center" disabled={pdfLoadingId === msg.id}>
+                              {pdfLoadingId === msg.id ? (
+                                <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                              ) : (
+                                <FileText className="w-4 h-4" />
+                              )}
+                            </Menu.Button>
+                            <Transition
+                              as={Fragment}
+                              enter="transition ease-out duration-100"
+                              enterFrom="transform opacity-0 scale-95"
+                              enterTo="transform opacity-100 scale-100"
+                              leave="transition ease-in duration-75"
+                              leaveFrom="transform opacity-100 scale-100"
+                              leaveTo="transform opacity-0 scale-95"
+                            >
+                              <Menu.Items className="absolute bottom-full left-0 mb-2 w-36 origin-bottom-left divide-y divide-border rounded-xl bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
+                                <div className="px-1 py-1">
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handlePdfAction('open', msg)}
+                                        className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                          } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                      >
+                                        Open PDF
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handlePdfAction('download', msg)}
+                                        className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                          } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                      >
+                                        Download
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handlePdfAction('share', msg)}
+                                        className={`${active ? 'bg-primary text-white' : 'text-maintext'
+                                          } group flex w-full items-center rounded-md px-2 py-2 text-xs font-medium`}
+                                      >
+                                        Share PDF
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+>>>>>>> a02c8994e71d798310c073583240e80da07775eb
                                 </div>
                               ) : (
                                 <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${msg.role === 'user' ? 'bg-white/10 border-white/20 hover:bg-white/20' : 'bg-secondary/30 border-border hover:bg-secondary/50'}`}>

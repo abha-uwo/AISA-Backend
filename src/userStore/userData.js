@@ -18,15 +18,18 @@ const processUser = (user) => {
   if (user) {
     // Always attempt to set a better avatar if one isn't explicitly set, is the default, or is a relative path
     if (!user.avatar || user.avatar.includes('gravatar.com') || user.avatar === '/User.jpeg' || user.avatar.startsWith('/')) {
-      user.avatar = getAvatarUrl(user);
+      return { ...user, avatar: getAvatarUrl(user) };
     }
   }
   return user;
 };
 
 export const setUserData = (data) => {
+  const existing = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = data.token || existing.token;
   const processedData = processUser(data);
-  localStorage.setItem("user", JSON.stringify(processedData))
+  const finalData = { ...processedData, token };
+  localStorage.setItem("user", JSON.stringify(finalData));
 }
 export const getUserData = () => {
   const data = JSON.parse(localStorage.getItem('user'))

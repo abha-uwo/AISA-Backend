@@ -49,7 +49,9 @@ export const generateChatResponse = async (history, currentMessage, systemInstru
             },
             signal: abortSignal
         });
-        return result.data.reply || "I'm sorry, I couldn't generate a response.";
+
+        // Return full response data (includes reply and potentially conversion data)
+        return result.data;
 
     } catch (error) {
         console.error("Gemini API Error:", error);

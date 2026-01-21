@@ -77,7 +77,7 @@ export const chatStorageService = {
 
   async getSessions() {
     try {
-      const token = getUserData()?.token;
+      const token = getUserData()?.token || localStorage.getItem("token");
       // Try Backend First
       const response = await fetch(`${API_BASE_URL}/chat`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -107,7 +107,7 @@ export const chatStorageService = {
   async getHistory(sessionId) {
     if (sessionId === "new") return [];
     try {
-      const token = getUserData()?.token;
+      const token = getUserData()?.token || localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/chat/${sessionId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
