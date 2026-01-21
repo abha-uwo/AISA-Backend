@@ -29,6 +29,7 @@ import axios from 'axios';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import { chatStorageService } from '../../services/chatStorageService';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { t, language, region, regionFlags } = useLanguage();
@@ -50,6 +51,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [issueText, setIssueText] = useState("");
   const [activeTab, setActiveTab] = useState("faq");
   const [issueType, setIssueType] = useState("General Inquiry");
+  const [chatSessions, setChatSessions] = useState([]);
 
   const issueOptions = [
     "General Inquiry",
@@ -130,6 +132,24 @@ const Sidebar = ({ isOpen, onClose }) => {
       return () => clearInterval(interval);
     }
   }, [token])
+
+  // Fetch chat sessions
+  useEffect(() => {
+    const loadSessions = async () => {
+      try {
+        const sessions = await chatStorageService.getSessions();
+        setChatSessions(sessions || []);
+      } catch (error) {
+        console.error('Failed to load chat sessions:', error);
+        setChatSessions([]);
+      }
+    };
+    loadSessions();
+
+    // Refresh sessions every 10 seconds to stay updated
+    const interval = setInterval(loadSessions, 10000);
+    return () => clearInterval(interval);
+  }, []);
   if (notifiyTgl.notify) {
     setTimeout(() => {
       setNotifyTgl({ notify: false })
@@ -191,235 +211,232 @@ const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Chat Removed from Global Sidebar */}
         <div className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          <NavLink to="/dashboard/chat" className={navItemClass} onClick={onClose}>
-            <MessageSquare className="w-5 h-5" />
-            <span>{t('chat')}</span>
-          </NavLink>
         </div>
+      </div>
 
-        {/* User Profile Footer */}
-        <div className="p-3 border-t border-border bg-secondary/30 relative">
-          {token ? (
-            /* Integrated Profile Card */
-            <div
+      {/* User Profile Footer */}
+      <div className="p-3 border-t border-border bg-secondary/30 relative">
+        {token ? (
+          /* Integrated Profile Card */
+          <div
+            onClick={() => {
+              navigate(AppRoute.PROFILE);
+              onClose();
+            }}
+            className="rounded-xl border border-transparent hover:bg-secondary transition-all cursor-pointer flex items-center gap-2 p-2 group"
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 overflow-hidden border border-primary/10 group-hover:bg-primary/30 transition-colors">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    const parent = e.target.parentElement;
+                    if (parent) {
+                      parent.classList.add("flex", "items-center", "justify-center");
+                      parent.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
+                    }
+                  }}
+                />
+              ) : (
+                user.name ? user.name.charAt(0).toUpperCase() : "U"
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-bold text-maintext truncate group-hover:text-primary transition-colors">{user.name}</p>
+              <p className="text-[11px] text-subtext truncate">{user.email}</p>
+            </div>
+
+            <div className="text-subtext group-hover:text-primary transition-colors">
+              <User className="w-4 h-4" />
+            </div>
+          </div>
+        ) : (
+          /* Guest / Login State */
+          <div
+            onClick={() => navigate(AppRoute.LOGIN)}
+            className="rounded-xl border border-transparent hover:bg-secondary transition-all cursor-pointer flex items-center gap-3 px-3 py-2 group"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 border border-primary/10 group-hover:bg-primary/20 transition-colors">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="font-bold text-maintext text-xs group-hover:text-primary transition-colors">
+              Log In
+            </div>
+          </div>
+        )}
+
+        <div className="mt-1 flex flex-col gap-1">
+          {/* Region/Language Indicator - Only show if logged in */}
+          {token && (
+            <button
               onClick={() => {
-                navigate(AppRoute.PROFILE);
+                navigate(AppRoute.PROFILE, { state: { openLanguage: true, timestamp: Date.now() } });
                 onClose();
               }}
-              className="rounded-xl border border-transparent hover:bg-secondary transition-all cursor-pointer flex items-center gap-2 p-2 group"
+              className="group flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-subtext hover:bg-secondary hover:text-maintext transition-all text-[10px] font-bold uppercase tracking-wider border border-transparent hover:border-border"
             >
-              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 overflow-hidden border border-primary/10 group-hover:bg-primary/30 transition-colors">
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      const parent = e.target.parentElement;
-                      if (parent) {
-                        parent.classList.add("flex", "items-center", "justify-center");
-                        parent.innerText = user.name ? user.name.charAt(0).toUpperCase() : "U";
-                      }
-                    }}
-                  />
-                ) : (
-                  user.name ? user.name.charAt(0).toUpperCase() : "U"
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-bold text-maintext truncate group-hover:text-primary transition-colors">{user.name}</p>
-                <p className="text-[11px] text-subtext truncate">{user.email}</p>
-              </div>
-
-              <div className="text-subtext group-hover:text-primary transition-colors">
-                <User className="w-4 h-4" />
-              </div>
-            </div>
-          ) : (
-            /* Guest / Login State */
-            <div
-              onClick={() => navigate(AppRoute.LOGIN)}
-              className="rounded-xl border border-transparent hover:bg-secondary transition-all cursor-pointer flex items-center gap-3 px-3 py-2 group"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase shrink-0 border border-primary/10 group-hover:bg-primary/20 transition-colors">
-                <User className="w-4 h-4" />
-              </div>
-              <div className="font-bold text-maintext text-xs group-hover:text-primary transition-colors">
-                Log In
-              </div>
-            </div>
+              <img
+                src={getFlagUrl(regionFlags[region] || 'in')}
+                alt={region}
+                className="w-3.5 h-2.5 object-cover rounded-sm shadow-sm"
+              />
+              <span>{regionFlags[region] || 'IN'} - {language.substring(0, 2).toUpperCase()}</span>
+            </button>
           )}
 
-          <div className="mt-1 flex flex-col gap-1">
-            {/* Region/Language Indicator - Only show if logged in */}
-            {token && (
-              <button
-                onClick={() => {
-                  navigate(AppRoute.PROFILE, { state: { openLanguage: true, timestamp: Date.now() } });
-                  onClose();
-                }}
-                className="group flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-subtext hover:bg-secondary hover:text-maintext transition-all text-[10px] font-bold uppercase tracking-wider border border-transparent hover:border-border"
-              >
-                <img
-                  src={getFlagUrl(regionFlags[region] || 'in')}
-                  alt={region}
-                  className="w-3.5 h-2.5 object-cover rounded-sm shadow-sm"
-                />
-                <span>{regionFlags[region] || 'IN'} - {language.substring(0, 2).toUpperCase()}</span>
-              </button>
-            )}
+          {/* FAQ Button */}
+          <button
+            onClick={() => setIsFaqOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-subtext hover:bg-secondary hover:text-maintext transition-all text-xs border border-transparent hover:border-border"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>{t('helpFaq')}</span>
+          </button>
+        </div>
+      </div>
+    </div >
 
-            {/* FAQ Button */}
+      {/* FAQ Modal */ }
+  {
+    isFaqOpen && (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+
+          <div className="p-6 border-b border-border flex justify-between items-center bg-secondary">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab('faq')}
+                className={`text-lg font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'faq' ? 'bg-primary/10 text-primary' : 'text-subtext hover:text-maintext'}`}
+              >
+                FAQ
+              </button>
+              <button
+                onClick={() => setActiveTab('help')}
+                className={`text-lg font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'help' ? 'bg-primary/10 text-primary' : 'text-subtext hover:text-maintext'}`}
+              >
+                Help
+              </button>
+            </div>
             <button
-              onClick={() => setIsFaqOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-subtext hover:bg-secondary hover:text-maintext transition-all text-xs border border-transparent hover:border-border"
+              onClick={() => setIsFaqOpen(false)}
+              className="p-2 hover:bg-black/5 rounded-full text-subtext transition-colors"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>{t('helpFaq')}</span>
+              <X className="w-6 h-6" />
             </button>
           </div>
-        </div>
-      </div >
 
-      {/* FAQ Modal */}
-      {
-        isFaqOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
-
-              <div className="p-6 border-b border-border flex justify-between items-center bg-secondary">
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setActiveTab('faq')}
-                    className={`text-lg font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'faq' ? 'bg-primary/10 text-primary' : 'text-subtext hover:text-maintext'}`}
-                  >
-                    FAQ
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('help')}
-                    className={`text-lg font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'help' ? 'bg-primary/10 text-primary' : 'text-subtext hover:text-maintext'}`}
-                  >
-                    Help
-                  </button>
-                </div>
-                <button
-                  onClick={() => setIsFaqOpen(false)}
-                  className="p-2 hover:bg-black/5 rounded-full text-subtext transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {activeTab === 'faq' ? (
-                  <>
-                    <p className="text-sm text-subtext font-medium">Get quick answers to common questions about our platform</p>
-                    {faqs.map((faq, index) => (
-                      <div key={index} className="border border-border rounded-xl bg-card overflow-hidden hover:border-primary/30 transition-all">
-                        <button
-                          onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
-                          className="w-full flex justify-between items-center p-4 text-left hover:bg-secondary transition-colors focus:outline-none"
-                        >
-                          <span className="font-semibold text-maintext text-[15px]">{faq.question}</span>
-                          {openFaqIndex === index ? (
-                            <ChevronUp className="w-4 h-4 text-primary" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-subtext" />
-                          )}
-                        </button>
-                        <div
-                          className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaqIndex === index ? 'max-h-96 opacity-100 bg-secondary/50' : 'max-h-0 opacity-0'
-                            }`}
-                        >
-                          <div className="p-4 pt-0 text-subtext text-sm leading-relaxed border-t border-border/50 mt-2 pt-3">
-                            {faq.answer}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-6">
-
-                    {/* Issue Type Dropdown */}
-                    <div>
-                      <label className="block text-sm font-bold text-maintext mb-2">Select Issue Category</label>
-                      <div className="relative">
-                        <select
-                          value={issueType}
-                          onChange={(e) => setIssueType(e.target.value)}
-                          className="w-full p-4 pr-10 rounded-xl bg-secondary border border-border focus:border-primary outline-none appearance-none text-maintext font-medium cursor-pointer hover:border-primary/50 transition-colors"
-                        >
-                          {issueOptions.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-subtext pointer-events-none" />
-                      </div>
-                    </div>
-
-                    {/* Issue Description */}
-                    <div>
-                      <label className="block text-sm font-bold text-maintext mb-2">Describe your issue</label>
-                      <textarea
-                        className="w-full p-4 rounded-xl bg-secondary border border-border focus:border-primary outline-none resize-none text-maintext min-h-[150px]"
-                        placeholder="Please provide details about the problem you are facing..."
-                        value={issueText}
-                        onChange={(e) => setIssueText(e.target.value)}
-                      />
-                    </div>
-
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {activeTab === 'faq' ? (
+              <>
+                <p className="text-sm text-subtext font-medium">Get quick answers to common questions about our platform</p>
+                {faqs.map((faq, index) => (
+                  <div key={index} className="border border-border rounded-xl bg-card overflow-hidden hover:border-primary/30 transition-all">
                     <button
-                      onClick={handleSupportSubmit}
-                      disabled={isSending || !issueText.trim()}
-                      className={`flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 ${isSending || !issueText.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                      onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                      className="w-full flex justify-between items-center p-4 text-left hover:bg-secondary transition-colors focus:outline-none"
                     >
-                      {isSending ? (
-                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="font-semibold text-maintext text-[15px]">{faq.question}</span>
+                      {openFaqIndex === index ? (
+                        <ChevronUp className="w-4 h-4 text-primary" />
                       ) : (
-                        <>
-                          <MessageSquare className="w-5 h-5" />
-                          Send to Support
-                        </>
+                        <ChevronDown className="w-4 h-4 text-subtext" />
                       )}
                     </button>
-
-                    {sendStatus === 'success' && (
-                      <div className="p-3 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg text-sm text-center font-medium border border-green-500/20 animate-in fade-in slide-in-from-top-2">
-                        Tciket Submitted Successfully! Our team will contact you soon.
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaqIndex === index ? 'max-h-96 opacity-100 bg-secondary/50' : 'max-h-0 opacity-0'
+                        }`}
+                    >
+                      <div className="p-4 pt-0 text-subtext text-sm leading-relaxed border-t border-border/50 mt-2 pt-3">
+                        {faq.answer}
                       </div>
-                    )}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="flex flex-col gap-6">
 
-                    {sendStatus === 'error' && (
-                      <div className="p-3 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg text-sm text-center font-medium border border-red-500/20 animate-in fade-in slide-in-from-top-2">
-                        Failed to submit ticket. Please try again or email us directly.
-                      </div>
-                    )}
+                {/* Issue Type Dropdown */}
+                <div>
+                  <label className="block text-sm font-bold text-maintext mb-2">Select Issue Category</label>
+                  <div className="relative">
+                    <select
+                      value={issueType}
+                      onChange={(e) => setIssueType(e.target.value)}
+                      className="w-full p-4 pr-10 rounded-xl bg-secondary border border-border focus:border-primary outline-none appearance-none text-maintext font-medium cursor-pointer hover:border-primary/50 transition-colors"
+                    >
+                      {issueOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-subtext pointer-events-none" />
+                  </div>
+                </div>
 
-                    <p className="text-xs text-center text-subtext">
-                      Or email us directly at <a href="mailto:support@a-series.in" className="text-primary font-medium hover:underline">support@a-series.in</a>
-                    </p>
+                {/* Issue Description */}
+                <div>
+                  <label className="block text-sm font-bold text-maintext mb-2">Describe your issue</label>
+                  <textarea
+                    className="w-full p-4 rounded-xl bg-secondary border border-border focus:border-primary outline-none resize-none text-maintext min-h-[150px]"
+                    placeholder="Please provide details about the problem you are facing..."
+                    value={issueText}
+                    onChange={(e) => setIssueText(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  onClick={handleSupportSubmit}
+                  disabled={isSending || !issueText.trim()}
+                  className={`flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 ${isSending || !issueText.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                >
+                  {isSending ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <MessageSquare className="w-5 h-5" />
+                      Send to Support
+                    </>
+                  )}
+                </button>
+
+                {sendStatus === 'success' && (
+                  <div className="p-3 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg text-sm text-center font-medium border border-green-500/20 animate-in fade-in slide-in-from-top-2">
+                    Tciket Submitted Successfully! Our team will contact you soon.
                   </div>
                 )}
-              </div>
 
-              <div className="p-4 border-t border-border bg-surface text-center">
-                <button
-                  onClick={() => setIsFaqOpen(false)}
-                  className="px-6 py-2 bg-primary text-white rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
-                >
-                  Close
-                </button>
-              </div>
+                {sendStatus === 'error' && (
+                  <div className="p-3 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg text-sm text-center font-medium border border-red-500/20 animate-in fade-in slide-in-from-top-2">
+                    Failed to submit ticket. Please try again or email us directly.
+                  </div>
+                )}
 
-            </div>
+                <p className="text-xs text-center text-subtext">
+                  Or email us directly at <a href="mailto:support@a-series.in" className="text-primary font-medium hover:underline">support@a-series.in</a>
+                </p>
+              </div>
+            )}
           </div>
-        )
-      }
+
+          <div className="p-4 border-t border-border bg-surface text-center">
+            <button
+              onClick={() => setIsFaqOpen(false)}
+              className="px-6 py-2 bg-primary text-white rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+            >
+              Close
+            </button>
+          </div>
+
+        </div>
+      </div>
+    )
+  }
     </>
   );
 };

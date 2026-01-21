@@ -13,13 +13,10 @@ const SecurityModal = ({ isOpen, onClose }) => {
             icon: <Lock className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-4">
-                    <p className="text-subtext">A-Series™ is committed to safeguarding user data in accordance with applicable data protection laws, including but not limited to GDPR and CCPA.</p>
-                    ...
-                    <p className="text-sm text-subtext">A-Series™ may collect personal and technical information including account details, usage metadata, device identifiers, and file access permissions.</p>
-                    ...
-                    <p className="text-sm text-subtext">A-Series™ does not sell personal data. Data may be shared with trusted third-party service providers strictly for operational requirements.</p>
-                    ...
-                    <p className="text-sm text-subtext">Users retain the right to access, rectify, or request deletion of their data by contacting contact@a-series.in.</p>
+                    <p className="text-subtext">AISA™ is committed to safeguarding user data in accordance with applicable data protection laws. We prioritize end-to-end encryption for all sensitive interactions.</p>
+                    <p className="text-sm text-subtext">AISA™ collects minimal personal and technical information required for service delivery, including account details and usage metadata.</p>
+                    <p className="text-sm text-subtext">AISA™ does not sell personal data. Data is shared with trusted infrastructure providers solely for operational requirements under strict confidentiality agreements.</p>
+                    <p className="text-sm text-subtext">Users retain full ownership of their data and may request access, rectification, or deletion by contacting support@aimall.global.</p>
                 </div>
             )
         },
@@ -29,23 +26,23 @@ const SecurityModal = ({ isOpen, onClose }) => {
             icon: <Shield className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3 text-subtext">
-                    <p><strong>2.1</strong> Users are responsible for maintaining the confidentiality of their credentials.</p>
-                    <p><strong>2.2</strong> A-Series™ employs encryption and secure session handling. Users must report unauthorized access immediately.</p>
+                    <p><strong>2.1</strong> Users are responsible for maintaining the confidentiality of their AISA™ account credentials.</p>
+                    <p><strong>2.2</strong> We employ industry-standard encryption and secure session protocols. Users must report any suspected unauthorized access immediately.</p>
                 </div>
             )
         },
         {
             id: 3,
-            title: "3. Acceptable Use & Prohibited Conduct",
+            title: "3. Acceptable Use Policy",
             icon: <AlertTriangle className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3">
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {[
-                            "Illegal or unauthorized use",
+                            "Illegal or malicious activities",
                             "Reverse engineering models",
-                            "Uploading malicious content",
-                            "Bypassing security controls"
+                            "Generating harmful content",
+                            "Automated scraping or abuse"
                         ].map((item, i) => (
                             <li key={i} className="flex items-center gap-2 text-xs text-subtext bg-surface p-2 rounded-lg border border-border">
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
@@ -58,79 +55,70 @@ const SecurityModal = ({ isOpen, onClose }) => {
         },
         {
             id: 4,
-            title: "4. AI Usage & Content Disclaimer",
+            title: "4. AI Limitations & Disclaimers",
             icon: <Scale className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-3">
                     <div className="bg-surface/50 p-3 rounded-lg border border-border">
-                        <p className="text-xs text-subtext"><strong>4.1 Accuracy:</strong> AI outputs are provided on an “as-is” basis and may contain inaccuracies.</p>
+                        <p className="text-xs text-subtext"><strong>4.1 Accuracy:</strong> AISA™ utilizes advanced LLMs, but outputs may occasionally be inaccurate. Users should verify critical information.</p>
                     </div>
                     <div className="bg-surface/50 p-3 rounded-lg border border-border">
-                        <p className="text-xs text-subtext"><strong>4.2 Reliability:</strong> A-Series™ is not responsible for outcomes arising from reliance on AI-generated content.</p>
+                        <p className="text-xs text-subtext"><strong>4.2 Liability:</strong> AISA™ is an assistive tool. We are not liable for decisions made based on AI-generated advice or content.</p>
                     </div>
                 </div>
             )
         },
         {
             id: 5,
-            title: "5. File Upload & Document Security",
+            title: "5. Content & Intellectual Property",
             icon: <FileText className="w-5 h-5 text-primary" />,
             content: (
                 <div className="space-y-2 text-subtext text-sm">
-                    <p>Uploaded files are processed solely for functionality (analysis, RAG). Executable or malicious files may be rejected.</p>
+                    <p>Users retain rights to content they generate using AISA™. However, using the platform does not grant rights to the underlying models or software, which remain the property of AISA™.</p>
                 </div>
             )
         },
         {
             id: 6,
-            title: "6. Cookies & Tracking",
+            title: "6. Cookies & Usage Tracking",
             icon: <Eye className="w-5 h-5 text-primary" />,
-            content: <p className="text-subtext text-sm">A-Series™ uses cookies for functionality and security. Users may manage cookies via browser settings.</p>
+            content: <p className="text-subtext text-sm">We use cookies to enhance your experience and ensure security. You can manage your cookie preferences through your browser settings.</p>
         },
         {
             id: 7,
-            title: "7. Third-Party Services",
+            title: "7. Third-Party Integrations",
             icon: <div className="w-5 h-5 flex items-center justify-center font-bold text-primary text-xs border border-primary/20 rounded-md">3P</div>,
-            content: <p className="text-subtext text-sm">Integrations with cloud providers and AI services are governed by contracts and limited to operational necessity.</p>
+            content: <p className="text-subtext text-sm">Integrations with third-party services (e.g., calendar, email) are performed only with user consent and limited to necessary data exchange.</p>
         },
         {
             id: 8,
-            title: "8. Intellectual Property",
+            title: "8. Platform Governance",
             icon: <div className="w-5 h-5 flex items-center justify-center font-bold text-primary text-xs border border-primary/20 rounded-md">©</div>,
-            content: <p className="text-subtext text-sm">All rights, licenses, and ownership remain with A-Series™ and UWO™. No transfer of ownership is implied.</p>
+            content: <p className="text-subtext text-sm">AISA™ reserves the right to suspend accounts that violate these guidelines to ensure the safety and integrity of the platform.</p>
         },
         {
             id: 9,
-            title: "9. Enforcement",
-            icon: <AlertTriangle className="w-5 h-5 text-primary" />,
-            content: <p className="text-subtext text-sm">We monitor for compliance and reserve the right to suspend or terminate accounts for violations or security threats.</p>
+            title: "9. Updates to Guidelines",
+            icon: <FileText className="w-5 h-5 text-primary" />,
+            content: <p className="text-subtext text-sm">We may update these policies periodically. Continued use of AISA™ signifies acceptance of the revised terms.</p>
         },
         {
             id: 10,
-            title: "10. Policy Updates",
+            title: "10. Contact & Support",
             icon: <FileText className="w-5 h-5 text-primary" />,
-            content: <p className="text-subtext text-sm">Modifications may occur at any time. Continued use of the platform constitutes acceptance of updated terms.</p>
+            content: <p className="text-subtext text-sm">For privacy concerns, data requests, or policy questions, please contact us at <span className="text-primary font-bold">support@aimall.global</span>.</p>
         },
         {
             id: 11,
-            title: "11. Contact",
-            icon: <FileText className="w-5 h-5 text-primary" />,
-            content: <p className="text-subtext text-sm">For concerns or rights requests, contact <span className="text-primary font-bold">contact@a-series.in</span>.</p>
-        },
-        {
-            id: 12,
-            title: "12. Incident Support",
+            title: "11. Incident Reporting",
             icon: <AlertTriangle className="w-5 h-5 text-blue-500" />,
             content: (
                 <div className="space-y-4">
-                    <p className="text-subtext text-xs">Report security violations or technical issues immediately.</p>
+                    <p className="text-subtext text-xs">If you encounter a security vulnerability or policy violation, please report it immediately.</p>
                     <div className="flex flex-wrap gap-2">
                         <button onClick={() => setIsReportModalOpen(true)} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold border border-blue-200 hover:bg-blue-100 transition-colors">
-                            📧 Open Form
+                            📧 Report Issue
                         </button>
-                        <a href="tel:+918358990909" className="px-3 py-1.5 bg-primary/5 text-primary rounded-lg text-[10px] font-bold border border-primary/20 hover:bg-primary/10 transition-colors">
-                            📞 +91 83589 90909
-                        </a>
                     </div>
                 </div>
             )
@@ -179,7 +167,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
                             <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar space-y-8">
                                 <div className="bg-secondary/50 border border-border rounded-xl p-6 shadow-sm">
                                     <p className="text-sm text-subtext leading-relaxed">
-                                        This section governs the acceptable use, data protection practices, and security standards applicable to <span className="text-maintext font-semibold">A-Series™</span>, operated by <span className="text-maintext font-semibold">UWO™</span>.
+                                        This section governs the acceptable use, data protection practices, and security standards applicable to <span className="text-maintext font-semibold">AISA™</span>, developed by <span className="text-maintext font-semibold">UWO™</span>.
                                     </p>
                                 </div>
 
@@ -208,7 +196,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
                                         🧠 Legal Summary
                                     </h3>
                                     <p className="text-subtext text-xs italic">
-                                        "These Guidelines establish the framework for lawful use, data protection, AI governance, and operational security within the A-Series platform."
+                                        "These Guidelines establish the framework for lawful use, data protection, AI governance, and operational security within the AISA™ platform."
                                     </p>
                                 </div>
                             </div>

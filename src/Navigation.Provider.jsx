@@ -45,7 +45,7 @@ const AuthenticatRoute = ({ children }) => {
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const isFullScreen = location.pathname.includes('/ai-personal-assistant');
+  const isFullScreen = location.pathname.includes('/ai-personal-assistant') || location.pathname.includes('/chat');
 
   const user = JSON.parse(
     localStorage.getItem('user') || '{"name":"User"}'
@@ -88,8 +88,8 @@ const DashboardLayout = () => {
           </div>
         )}
 
-        {/* Back Button for Full Screen Mode (Desktop/Mobile) */}
-        {isFullScreen && (
+        {/* Back Button for Full Screen Mode (Desktop/Mobile) - Exclude for Chat */}
+        {isFullScreen && !location.pathname.includes('/chat') && (
           <div className="absolute top-4 left-4 z-50">
             <button
               onClick={() => navigate('/dashboard')}

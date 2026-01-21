@@ -1,5 +1,5 @@
 export const logo = "/logo/Logo.png";
-export const name = "A-Series";
+export const name = "AISA";
 
 export const faqs = [
     {

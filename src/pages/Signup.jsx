@@ -47,7 +47,7 @@ const Signup = () => {
             <img src={logo} alt="" />
           </div>
           <h2 className="text-3xl font-bold text-maintext mb-2">Create Account</h2>
-          <p className="text-subtext">Join A-Series to unlock full access</p>
+          <p className="text-subtext">Join AI Super Assitant to unlock full access</p>
         </div>
 
         {/* Card */}

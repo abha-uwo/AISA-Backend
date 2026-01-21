@@ -58,7 +58,7 @@ const Login = () => {
             <img src={logo} alt="" />
           </div>
           <h2 className="text-3xl font-bold text-maintext mb-2">Welcome Back</h2>
-          <p className="text-subtext">Sign in to continue to A-Series</p>
+          <p className="text-subtext">Sign in to continue to AISA<sup>TM</sup></p>
         </div>
 
         {/* Card */}
