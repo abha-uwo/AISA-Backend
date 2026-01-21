@@ -2382,6 +2382,55 @@ For "Remix" requests with an attachment, analyze the attached image, then create
                     )
                   )}
 
+                  {/* File conversion download button */}
+                  {msg.conversion && msg.conversion.file && (
+                    <div className="mt-4 pt-3 border-t border-border/40 w-full block">
+                      <button
+                        onClick={() => {
+                          const byteCharacters = atob(msg.conversion.file);
+                          const byteNumbers = new Array(byteCharacters.length);
+                          for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                          }
+                          const byteArray = new Uint8Array(byteNumbers);
+                          const blob = new Blob([byteArray], { type: msg.conversion.mimeType });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = msg.conversion.fileName;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-xl transition-all group w-full"
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-blue-50 text-blue-600'
+                          }`}>
+                          {msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                            ? <FileText className="w-5 h-5" />
+                            : <File className="w-5 h-5" />
+                          }
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-[15px] font-bold text-primary transition-colors mb-0.5">
+                            {msg.conversion.fileName}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-xs font-semibold flex items-center gap-1 px-2 py-0.5 rounded-md border ${msg.conversion.fileName.toLowerCase().endsWith('.pdf')
+                              ? 'text-primary bg-primary/10 border-primary/20'
+                              : 'text-primary bg-primary/10 border-primary/20'
+                              }`}>
+                              Click here to download {msg.conversion.fileName.split('.').pop().toLowerCase()}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
                   {/* AI Feedback Actions */}
                   {msg.role !== 'user' && (
                     <div className="mt-4 pt-3 border-t border-border/40 w-full block">
