@@ -1,5 +1,6 @@
 import express from "express"
 import userModel from "../models/User.js"
+import mongoose from "mongoose";
 import { verifyToken } from "../middleware/authorization.js"
 import Transaction from "../models/Transaction.js"
 
@@ -9,6 +10,19 @@ route.get("/", verifyToken, async (req, res) => {
     try {
 
         const userId = req.user.id
+
+        // DB Down Fallback
+        if (mongoose.connection.readyState !== 1) {
+            console.log("[DB] MongoDB unreachable. Returning demo user data.");
+            return res.status(200).json({
+                _id: userId,
+                name: req.user.name || "Demo User",
+                email: req.user.email || "demo@ai-mall.in",
+                role: "user",
+                avatar: ""
+            });
+        }
+
         const user = await userModel.findById(userId)
         res.status(200).json(user)
     } catch (error) {

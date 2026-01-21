@@ -26,7 +26,8 @@ const chatSessionSchema = new mongoose.Schema({
   },
   title: { type: String, default: 'New Chat' },
   messages: [messageSchema],
-  lastModified: { type: Number, default: Date.now }
+  lastModified: { type: Number, default: Date.now },
+  detectedMode: { type: String, default: 'NORMAL_CHAT' }
 }, { timestamps: true });
 const ChatSession = mongoose.model('ChatSession', chatSessionSchema);
 export default ChatSession

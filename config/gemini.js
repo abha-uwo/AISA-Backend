@@ -10,12 +10,7 @@ if (!apiKey) {
 }
 
 export const genAI = new GoogleGenerativeAI(apiKey);
-
-// Config for the standard text model
-// Using gemini-1.5-flash which is widely available and performant
-// Using gemini-1.5-flash-001 which is widely available and performant
-// Using gemini-2.5-flash-lite which is available in 2026
-const textModelName = 'gemini-2.5-flash-lite';
+const textModelName = 'gemini-2.0-flash';
 
 // Create a default instance similar to what was exported as 'generativeModel' in vertex config
 export const generativeModel = genAI.getGenerativeModel({
@@ -41,10 +36,7 @@ export const generativeModel = genAI.getGenerativeModel({
     generationConfig: {
         maxOutputTokens: 4192
     },
-    systemInstruction: {
-        role: 'system',
-        parts: [{
-            text: `You are AISA™, the internal intelligent assistant developed and trained under
+    systemInstruction: `You are AISA™, the internal intelligent assistant developed and trained under
 Unified Web Options & Services (UWO) for the AI Mall™ ecosystem.
 Development and implementation are led by Sanskar Sahu.
 
@@ -85,8 +77,6 @@ Boundaries:
 
 Primary objective:
 Support UWO and AI Mall™ users by delivering reliable, practical, and brand-aligned assistance.`
-        }]
-    },
 });
 
 // For visual models if needed

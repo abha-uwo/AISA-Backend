@@ -12,7 +12,7 @@ const connectDB = async () => {
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     logger.error(`Error: ${error.message}`);
-    // process.exit(1); // Keep server running for debugging network issues
+    // process.exit(1); // Allow server to run even if DB fails for testing purposes
   }
 };
 

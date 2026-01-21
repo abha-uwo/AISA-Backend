@@ -2365,3 +2365,157 @@ Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generative
     at async file:///G:/AA/A-Series-Backend/routes/chatRoutes.js:103:17
 >>>>>>> b7f3ca0a19f5798dc23cd843750316dcad2f2440
 -------------------------------------------
+
+Timestamp: 2026-01-21T06:01:59.848Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:05:45.863Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:09:11.107Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [400 Bad Request] API key expired. Please renew the API key. [{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key expired. Please renew the API key."}]
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:20:11.818Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:30:24.060Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:32:11.641Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:43:36.626Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:45:43.047Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T06:56:44.639Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T07:01:45.608Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
+
+Timestamp: 2026-01-21T07:03:36.449Z
+Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+Code: undefined
+Env Project: ai-mall-482411
+Env Creds Path: 'undefined'
+Creds File Exists: N/A
+Stack: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at handleResponseNotOk (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:432:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async makeRequest (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:401:9)
+    at async generateContentStream (file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/node_modules/@google/generative-ai/dist/index.mjs:860:22)
+    at async file:///C:/Users/Computer2/OneDrive/Desktop/AISA/AISA_Backend/routes/chatRoutes.js:186:35
+-------------------------------------------
