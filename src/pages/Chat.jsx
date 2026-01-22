@@ -8,6 +8,7 @@ import { Menu, Transition, Dialog } from '@headlessui/react';
 import { generateChatResponse } from '../services/geminiService';
 import { chatStorageService } from '../services/chatStorageService';
 import { useLanguage } from '../context/LanguageContext';
+import { useRecoilState } from 'recoil';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Loader from '../Components/Loader/Loader';
@@ -21,6 +22,7 @@ import { apis } from '../types';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { detectMode, getModeName, getModeIcon, getModeColor } from '../utils/modeDetection';
+import { sessionsData } from '../userStore/userData';
 
 
 const WELCOME_MESSAGE = `Hello! I’m AISA, your Artificial Intelligence Super Assistant.
@@ -90,7 +92,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [excelHTML, setExcelHTML] = useState(null);
   const [textPreview, setTextPreview] = useState(null);
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useRecoilState(sessionsData);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -260,7 +262,7 @@ const Chat = () => {
 
       setMessages(prev => [...prev, newMessage]);
       inputRef.current.value = '';
-      
+
       try {
         // Call the video generation endpoint
         const response = await axios.post(`http://localhost:8080/api/video/generate`, {
@@ -324,7 +326,7 @@ const Chat = () => {
 
       setMessages(prev => [...prev, newMessage]);
       inputRef.current.value = '';
-      
+
       try {
         // Call the image generation endpoint
         const response = await axios.post(`http://localhost:8080/api/image/generate`, {
@@ -386,7 +388,7 @@ const Chat = () => {
 
       setMessages(prev => [...prev, newMessage]);
       inputRef.current.value = '';
-      
+
       try {
         // Send message with deep search context
         const response = await generateChatResponse(query, {
@@ -472,7 +474,7 @@ const Chat = () => {
       }
     };
     loadSessions();
-  }, [messages]);
+  }, [messages, setSessions]);
 
   const isNavigatingRef = useRef(false);
 
@@ -491,12 +493,7 @@ const Chat = () => {
         setMessages(history);
       } else {
         setCurrentSessionId('new');
-        setMessages([{
-          id: 'welcome-msg',
-          role: 'model',
-          content: WELCOME_MESSAGE,
-          timestamp: Date.now()
-        }]);
+        setMessages([]);
       }
 
       setShowHistory(false);

@@ -21,13 +21,14 @@ import {
   Plus,
   Shield,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Search
 } from 'lucide-react';
 import { apis, AppRoute } from '../../types';
 import { faqs } from '../../constants'; // Import shared FAQs
 import NotificationBar from '../NotificationBar/NotificationBar.jsx';
 import { useRecoilState } from 'recoil';
-import { clearUser, getUserData, setUserData, toggleState, userData } from '../../userStore/userData';
+import { clearUser, getUserData, setUserData, toggleState, userData, sessionsData } from '../../userStore/userData';
 import axios from 'axios';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -56,10 +57,11 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [issueText, setIssueText] = useState("");
   const [activeTab, setActiveTab] = useState("faq");
   const [issueType, setIssueType] = useState("General Inquiry");
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useRecoilState(sessionsData);
   const { sessionId } = useParams();
   const [currentSessionId, setCurrentSessionId] = useState(sessionId || 'new');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const issueOptions = [
     "General Inquiry",
@@ -144,11 +146,17 @@ const Sidebar = ({ isOpen, onClose }) => {
   // Fetch chat sessions
   useEffect(() => {
     const fetchSessions = async () => {
-      const sessionsData = await chatStorageService.getSessions();
-      setSessions(sessionsData);
+      try {
+        const data = await chatStorageService.getSessions();
+        setSessions(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch sessions:", err);
+      }
     };
-    fetchSessions();
-  }, []);
+    if (token) {
+      fetchSessions();
+    }
+  }, [token, sessionId, setSessions]);
 
   // Update currentSessionId when sessionId changes
   useEffect(() => {
@@ -254,6 +262,20 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Chat History Section */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Search Bar */}
+          <div className="px-3 pt-3">
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtext group-focus-within:text-primary transition-colors" />
+              <input
+                type="text"
+                placeholder="Search history..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-secondary/50 border border-border focus:border-primary/50 focus:bg-card focus:ring-4 focus:ring-primary/5 rounded-xl py-2 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-subtext/50"
+              />
+            </div>
+          </div>
+
           {/* New Chat Button */}
           <div className="p-3">
             <button
@@ -267,37 +289,39 @@ const Sidebar = ({ isOpen, onClose }) => {
           {/* Chat Sessions List */}
           <div className="flex-1 overflow-y-auto px-2 space-y-1">
             <h3 className="px-4 py-2 text-xs font-semibold text-subtext uppercase tracking-wider">
-              Recent
+              HISTORY
             </h3>
 
-            {sessions.map((session) => (
-              <div key={session.sessionId} className="group relative px-2">
-                <button
-                  onClick={() => {
-                    navigate(`/dashboard/chat/${session.sessionId}`);
-                    onClose();
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors truncate
+            {sessions
+              .filter(session => session.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((session) => (
+                <div key={session.sessionId} className="group relative px-2">
+                  <button
+                    onClick={() => {
+                      navigate(`/dashboard/chat/${session.sessionId}`);
+                      onClose();
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors truncate
                     ${currentSessionId === session.sessionId
-                      ? 'bg-card text-primary shadow-sm border border-border'
-                      : 'text-subtext hover:bg-card hover:text-maintext'
-                    }
+                        ? 'bg-card text-primary shadow-sm border border-border'
+                        : 'text-subtext hover:bg-card hover:text-maintext'
+                      }
                   `}
-                >
-                  <div className="font-medium truncate pr-6">{session.title}</div>
-                  <div className="text-[10px] text-subtext/70">
-                    {new Date(session.lastModified).toLocaleDateString()}
-                  </div>
-                </button>
-                <button
-                  onClick={(e) => handleDeleteSession(e, session.sessionId)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-subtext hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Delete Chat"
-                >
-                  <Plus className="w-4 h-4 rotate-45" />
-                </button>
-              </div>
-            ))}
+                  >
+                    <div className="font-medium truncate pr-6">{session.title}</div>
+                    <div className="text-[10px] text-subtext/70">
+                      {new Date(session.lastModified).toLocaleDateString()}
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteSession(e, session.sessionId)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-subtext hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete Chat"
+                  >
+                    <Plus className="w-4 h-4 rotate-45" />
+                  </button>
+                </div>
+              ))}
 
             {sessions.length === 0 && (
               <div className="px-4 text-xs text-subtext italic">No recent chats</div>
@@ -336,7 +360,17 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-bold text-maintext truncate group-hover:text-primary transition-colors">{user.name}</p>
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <p className="text-sm font-bold text-maintext truncate group-hover:text-primary transition-colors">{user.name}</p>
+                    {user.plan && user.plan !== 'Basic' && (
+                      <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter shrink-0 ${user.plan === 'King'
+                        ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm'
+                        : 'bg-primary text-white shadow-sm'
+                        }`}>
+                        {user.plan}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-subtext truncate">{user.email}</p>
                 </div>
 
@@ -355,7 +389,17 @@ const Sidebar = ({ isOpen, onClose }) => {
                         {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                       </div>
                       <div className="overflow-hidden flex-1">
-                        <p className="text-sm font-bold text-maintext truncate">{user.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-maintext truncate">{user.name}</p>
+                          {user.plan && user.plan !== 'Basic' && (
+                            <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${user.plan === 'King'
+                              ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
+                              : 'bg-primary text-white'
+                              }`}>
+                              {user.plan}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-subtext truncate">@{user.email?.split('@')[0]}</p>
                       </div>
                     </div>
@@ -365,7 +409,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <div className="p-1">
                     <button
                       onClick={() => {
-                        toast('Upgrade plan coming soon!');
+                        setNotifyTgl(prev => ({ ...prev, platformSubTgl: true }));
                         setIsProfileMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-maintext hover:bg-secondary group"

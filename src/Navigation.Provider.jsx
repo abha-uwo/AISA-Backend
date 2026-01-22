@@ -22,7 +22,9 @@ import ResetPassword from './pages/ResetPassword.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import TermsOfService from './pages/TermsOfService.jsx';
 import CookiePolicy from './pages/CookiePolicy.jsx';
+import PlatformSubscriptionModal from './Components/SubscriptionForm/PlatformSubscriptionModal.jsx';
 
+import { AnimatePresence } from 'motion/react';
 import { lazy, Suspense } from 'react';
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute.jsx';
 
@@ -121,9 +123,14 @@ const PlaceholderPage = ({ title }) => (
 import { Toaster } from 'react-hot-toast';
 
 const NavigateProvider = () => {
+  const [tglState] = useRecoilState(toggleState);
+
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
+      <AnimatePresence>
+        {tglState.platformSubTgl && <PlatformSubscriptionModal />}
+      </AnimatePresence>
       <Routes>
         {/* Public Routes */}
         <Route path={AppRoute.LANDING} element={<Landing />} />

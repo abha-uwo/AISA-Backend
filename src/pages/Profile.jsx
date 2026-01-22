@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
     CircleUser,
     Settings,
@@ -20,12 +20,13 @@ import {
     X,
     Moon,
     Sun,
-    Globe
+    Globe,
+    CreditCard
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { AppRoute, apis } from '../types';
 import axios from 'axios';
-import { getUserData, clearUser, setUserData, userData } from '../userStore/userData';
+import { getUserData, clearUser, setUserData, userData, toggleState } from '../userStore/userData';
 import { useRecoilState } from 'recoil';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -71,6 +72,26 @@ const Profile = () => {
     const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
     const [showNewPassword, setShowNewPassword] = React.useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+    const [payments, setPayments] = React.useState([]);
+    const [isPaymentsLoading, setIsPaymentsLoading] = React.useState(true);
+    const [showTransactionsModal, setShowTransactionsModal] = React.useState(false);
+
+    React.useEffect(() => {
+        const fetchPayments = async () => {
+            if (!user?.token) return;
+            try {
+                const res = await axios.get(apis.getPaymentHistory, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                setPayments(Array.isArray(res.data) ? res.data : []);
+            } catch (error) {
+                console.error("Failed to fetch payments", error);
+            } finally {
+                setIsPaymentsLoading(false);
+            }
+        };
+        fetchPayments();
+    }, [user?.token]);
 
     const toggleSetting = async (key) => {
         const oldSettings = { ...userSettings };
@@ -231,6 +252,24 @@ const Profile = () => {
             setActiveSection('language');
             setSelectionMode('language');
         }
+        if (location.state?.activeTab === 'personalization' || location.state?.activeTab === 'general') {
+            const preferencesSection = document.getElementById('preferences-section');
+            if (preferencesSection) {
+                preferencesSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        if (location.state?.activeTab === 'notifications') {
+            const notificationsSection = document.getElementById('notifications-section');
+            if (notificationsSection) {
+                notificationsSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        if (location.state?.activeTab === 'security') {
+            const securitySection = document.getElementById('security-section');
+            if (securitySection) {
+                securitySection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
     }, [location.state]);
 
     const currencies = ["USD ($)", "EUR (€)", "GBP (£)", "INR (₹)", "JPY (¥)", "CNY (¥)", "AUD (A$)", "CAD (C$)"];
@@ -266,9 +305,11 @@ const Profile = () => {
 
     const getNativeName = (lang) => nativeLanguageNames[lang] || lang;
 
+    const [tglState, setTglState] = useRecoilState(toggleState);
+
     const stats = [
         { label: t('totalSessions'), value: '128', icon: Clock, color: 'bg-blue-500/10 text-blue-600' },
-        { label: t('proFeatures'), value: 'Active', icon: Star, color: 'bg-sky-400/10 text-sky-600' },
+        { label: 'Current Plan', value: user?.plan || 'Basic', icon: Star, color: 'bg-sky-400/10 text-sky-600', clickable: true },
         { label: t('accountSettings'), value: 'Configured', icon: Settings, color: 'bg-purple-500/10 text-purple-600' },
         { label: t('credits'), value: <Infinity className="w-5 h-5" />, icon: Shield, color: 'bg-green-500/10 text-green-600' }
     ];
@@ -343,20 +384,11 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {stats.map((stat, index) => (
-                        <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-card border border-border p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group">
-                            <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}><stat.icon className="w-5 h-5" /></div>
-                            <p className="text-xs font-bold text-subtext uppercase tracking-widest mb-1">{stat.label}</p>
-                            <div className="text-xl font-black text-maintext">{stat.value}</div>
-                        </motion.div>
-                    ))}
-                </div>
+
 
                 {/* Account Details & Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-                    <div className="bg-card border border-border rounded-[32px] p-8 space-y-8">
+                    <div id="preferences-section" className="bg-card border border-border rounded-[32px] p-8 space-y-8">
                         <div className="space-y-6">
                             <h2 className="text-xl font-bold text-maintext flex items-center gap-2"><Settings className="w-5 h-5 text-primary" />{t.accountPreferences}</h2>
                             <div className="space-y-4">
@@ -498,7 +530,7 @@ const Profile = () => {
                         </div>
 
                         {/* Notifications */}
-                        <div className="space-y-6 pt-6 border-t border-border">
+                        <div id="notifications-section" className="space-y-6 pt-6 border-t border-border">
                             <h2 className="text-xl font-bold text-maintext flex items-center gap-2"><Bell className="w-5 h-5 text-blue-500" />Notifications</h2>
                             <div className="space-y-4">
                                 {['emailNotif', 'pushNotif'].map(k => (
@@ -514,14 +546,31 @@ const Profile = () => {
                     </div>
 
                     {/* Security Column */}
-                    <div className="bg-card border border-border rounded-[32px] p-8 flex flex-col justify-between">
+                    <div id="security-section" className="bg-card border border-border rounded-[32px] p-8 flex flex-col justify-between">
                         <div className="space-y-6">
                             <h2 className="text-xl font-bold text-maintext flex items-center gap-2"><Lock className="w-5 h-5 text-green-500" />{t.securityStatus}</h2>
                             <div className="space-y-4">
-                                <div className="flex items-center gap-4 p-4 bg-green-500/5 border border-green-500/10 rounded-2xl"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><p className="text-sm font-bold text-green-700">{t.accountSecure}</p></div>
+
                                 <button onClick={() => setShowPasswordModal(true)} className="w-full p-4 bg-secondary/50 rounded-2xl border border-border hover:bg-secondary transition-colors text-left group">
                                     <p className="text-xs text-subtext mb-1">Password</p>
                                     <div className="flex justify-between items-center"><span className="text-sm font-bold text-maintext">Change Password</span><ChevronRight className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" /></div>
+                                </button>
+                            </div>
+
+                            {/* Payment History Button */}
+                            <div className="pt-4">
+                                <button
+                                    onClick={() => setShowTransactionsModal(true)}
+                                    className="w-full p-4 bg-secondary/50 rounded-2xl border border-border hover:bg-secondary transition-colors text-left group"
+                                >
+                                    <p className="text-xs text-subtext mb-1">Billing</p>
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <CreditCard className="w-4 h-4 text-purple-500" />
+                                            <span className="text-sm font-bold text-maintext">Transaction History</span>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                                    </div>
                                 </button>
                             </div>
                         </div>
@@ -532,6 +581,90 @@ const Profile = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Transaction History Modal */}
+                <AnimatePresence>
+                    {showTransactionsModal && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowTransactionsModal(false)}
+                                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="relative bg-card border border-border w-full max-w-lg rounded-[32px] p-8 shadow-2xl overflow-hidden"
+                            >
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-black text-maintext flex items-center gap-3">
+                                        <CreditCard className="w-6 h-6 text-purple-500" />
+                                        Payment History
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowTransactionsModal(false)}
+                                        className="p-2 hover:bg-secondary rounded-full transition-colors"
+                                    >
+                                        <X className="w-5 h-5 text-subtext" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                                    {isPaymentsLoading ? (
+                                        <div className="flex flex-col items-center py-12">
+                                            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+                                            <p className="text-sm text-subtext">Loading transactions...</p>
+                                        </div>
+                                    ) : payments.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <CreditCard className="w-8 h-8 text-subtext/40" />
+                                            </div>
+                                            <p className="text-maintext font-bold">No transactions yet</p>
+                                            <p className="text-sm text-subtext mt-1">Your payment history will appear here.</p>
+                                        </div>
+                                    ) : (
+                                        payments.map((tx) => (
+                                            <div
+                                                key={tx._id}
+                                                className="p-4 bg-secondary/30 rounded-2xl border border-border flex justify-between items-center group hover:border-primary/30 transition-all"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.status?.toLowerCase() === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
+                                                        }`}>
+                                                        <Check className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-maintext capitalize">{tx.plan || 'Upgrade'}</p>
+                                                        <p className="text-xs text-subtext">{new Date(tx.createdAt).toLocaleDateString(undefined, {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-black text-maintext">₹{tx.amount}</p>
+                                                    <p className="text-[10px] text-subtext font-mono truncate max-w-[100px]">ID: {tx.transactionId || tx._id}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => setShowTransactionsModal(false)}
+                                    className="w-full mt-6 py-4 bg-maintext text-card font-black rounded-2xl hover:opacity-90 transition-opacity"
+                                >
+                                    Close History
+                                </button>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 {/* Password Modal */}
                 {showPasswordModal && (
