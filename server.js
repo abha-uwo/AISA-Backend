@@ -13,32 +13,41 @@ import userRoute from './routes/user.js'
 
 import chatRoute from './routes/chat.routes.js';
 import knowledgeRoute from './routes/knowledge.routes.js';
-// import pdfRoutes from './routes/pdfRoutes.js';
-// import aibizRoutes from './routes/aibizRoutes.js';
-// import fileUpload from 'express-fileupload';
+import aibaseRoutes from './routes/aibaseRoutes.js';
 import * as aibaseService from './services/aibaseService.js';
-// import reportRoutes from './routes/reportRoutes.js';
+
 import notificationRoutes from "./routes/notificationRoutes.js";
-// import revenueRoutes from './routes/revenueRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import personalTaskRoutes from './routes/personalTaskRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
+import imageRoutes from './routes/image.routes.js';
+import videoRoutes from './routes/videoRoutes.js';
 // import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+console.log("--- STARTUP DEBUG ---");
+console.log("PORT from env:", process.env.PORT);
+console.log("Effective PORT:", PORT);
+console.log("MONGO_URI from env:", process.env.MONGODB_URI);
+console.log("MONGODB_ATLAS_URI from env:", process.env.MONGODB_ATLAS_URI);
+console.log("---------------------");
+
 // Connect to Database
-try {
-  await connectDB();
+connectDB().then(() => {
   console.log("Database connection attempt finished, initializing services...");
-  aibaseService.initializeFromDB();
-} catch (error) {
+  try {
+    aibaseService.initializeFromDB?.();
+  } catch (e) {
+    console.warn("AIBASE service initialization skipped:", e.message);
+  }
+}).catch(error => {
   console.error("Database connection failed during startup:", error);
-}
+});
 
 
 // Middleware
@@ -70,39 +79,37 @@ app.use((req, res, next) => {
 });
 
 // Mount Routes
-// AIBASE Routes: /api/aibase/chat, /api/aibase/knowledge
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/personal-assistant', personalTaskRoutes);
 
-
-// AIBASE Routes: /api/aibase/chat, /api/aibase/knowledge
+// AIBASE Chat Routes
 app.use('/api/aibase/chat', chatRoute);
 app.use('/api/aibase/knowledge', knowledgeRoute);
+app.use('/api/aibase', aibaseRoutes);
 
-//Get user Route
-app.use('/api/user', userRoute)
+// Feature Routes
 
-// Chat Routes: /api/chat (GET sessions), /api/chat/:id (GET history), /api/chat/:id/message (POST message)
-app.use('/api/chat', chatRoutes);
-
-// Auth Routes: /api/auth/login, /api/auth/signup
+// User & Auth Routes
+app.use('/api/user', userRoute);
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/verify-email', emailVatifiation);
 
-// Agent Routes
+// Feature Routes
+app.use('/api/chat', chatRoutes);
 app.use('/api/agents', agentRoutes);
-
-// Dashboard Routes
-app.use('/api', dashboardRoutes);
-
-// Notification Routes
 app.use('/api/notifications', notificationRoutes);
-
-// Voice Routes
 app.use('/api/voice', voiceRoutes);
-
-// Reminder Routes
 app.use('/api/reminders', reminderRoutes);
 
-// Support Routes
-app.use('/api/support', supportRoutes);
+// Dashboard
+app.use('/api', dashboardRoutes);
+
+// Image Generation
+app.use('/api/image', imageRoutes);
+
+// Video Generation
+app.use('/api/video', videoRoutes);
 
 // Catch-all 404
 app.use((req, res) => {
@@ -113,12 +120,6 @@ app.use((req, res) => {
     path: req.originalUrl
   });
 });
-
-
-// Image Routes
-import imageRoutes from './routes/image.routes.js';
-app.use('/api/image', imageRoutes);
-
 
 // Global Error Handler
 app.use((err, req, res, next) => {

@@ -177,8 +177,12 @@ router.post("/", verifyToken, async (req, res) => {
           searchResults = processSearchResults(rawSearchData);
           console.log(`[WEB SEARCH] Found ${searchResults.snippets.length} results`);
 
-          // Override system instruction with web search instruction
+          // Generate system instruction with search results
           webSearchInstruction = getWebSearchSystemInstruction(searchResults, language || 'English');
+
+          // Inject search results into context
+          parts.push({ text: `[WEB SEARCH RESULTS]:\n${JSON.stringify(searchResults.snippets)}` });
+          parts.push({ text: `[SEARCH INSTRUCTION]: ${webSearchInstruction}` });
         } else {
           console.warn('[WEB SEARCH] No search results found');
         }
@@ -261,18 +265,8 @@ router.post("/", verifyToken, async (req, res) => {
       }
     }
 
-    // For Google Generative AI SDK, we pass the parts directly (or a prompt string) as the "contents".
-    // It accepts an array of Content objects, or a simple string/array of parts.
-    // However, since we are sending a single turn of "user" content (that includes history context manually mocked), we just send the parts array wrapped in strict format if needed, or just the parts.
-
     // Correct usage for single-turn content generation with this SDK
-    // model.generateContentStream([ ...parts ])
-
-    // Construct valid Content object
     const contentPayload = { role: "user", parts: parts };
-
-    console.log("--- Gemini Payload ---");
-    console.log(JSON.stringify(contentPayload, null, 2).substring(0, 1000) + "...");
 
     let reply = "";
     let retryCount = 0;
@@ -281,8 +275,6 @@ router.post("/", verifyToken, async (req, res) => {
     const attemptGeneration = async () => {
       const streamingResult = await generativeModel.generateContentStream({ contents: [contentPayload] });
       const response = await streamingResult.response;
-      console.log("--- Gemini Response ---");
-      console.log(JSON.stringify(response, null, 2));
       return response.text();
     };
 
@@ -293,21 +285,11 @@ router.post("/", verifyToken, async (req, res) => {
       } catch (err) {
         if (err.status === 429 && retryCount < maxRetries - 1) {
           retryCount++;
-          const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
-          console.log(`Quota reached. Retrying in ${waitTime}ms... (Attempt ${retryCount}/${maxRetries})`);
+          const waitTime = Math.pow(2, retryCount) * 1000;
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
         }
-
-        console.error("Gemini Response Error:", err);
-        // If we have candidates, try to extract helpful error info
-        if (err.response?.candidates && err.response.candidates.length > 0) {
-          const candidate = err.response.candidates[0];
-          reply = `[Blocked: ${candidate.finishReason}] ${candidate.safetyRatings?.map(r => `${r.category}:${r.probability}`).join(', ')}`;
-        } else {
-          throw err; // Re-throw if not a 429 or final attempt
-        }
-        break;
+        throw err;
       }
     }
 
@@ -315,23 +297,31 @@ router.post("/", verifyToken, async (req, res) => {
       reply = "I understood your request but couldn't generate a text response.";
     }
 
-    // Return response with conversion result if available
-    const response = { reply };
+    // Construct final response object
+    const finalResponse = {
+      reply,
+      detectedMode,
+      language: detectedLanguage || language || 'English'
+    };
+
+    if (voiceConfirmation) {
+      finalResponse.voiceConfirmation = voiceConfirmation;
+    }
 
     if (conversionResult) {
       if (conversionResult.success) {
-        response.conversion = {
+        finalResponse.conversion = {
           file: conversionResult.file,
           fileName: conversionResult.fileName,
           mimeType: conversionResult.mimeType
         };
-        response.reply = conversionResult.message || reply;
+        finalResponse.reply = conversionResult.message || reply;
       } else {
-        response.reply = `Conversion failed: ${conversionResult.error}`;
+        finalResponse.reply = `Conversion failed: ${conversionResult.error}`;
       }
     }
 
-    return res.status(200).json(response);
+    return res.status(200).json(finalResponse);
   } catch (err) {
     const fs = await import('fs');
     try {
@@ -475,6 +465,42 @@ router.post('/:sessionId/message', verifyToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to save message' });
+  }
+});
+
+
+// Delete individual message from session
+router.delete('/:sessionId/message/:messageId', verifyToken, async (req, res) => {
+  try {
+    const { sessionId, messageId } = req.params;
+    const userId = req.user.id;
+
+    // Optional: Also delete the subsequent model response if it exists
+    // (Logic moved from frontend to backend for consistency)
+    const session = await ChatSession.findOne({ sessionId });
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+
+    const msgIndex = session.messages.findIndex(m => m.id === messageId);
+    if (msgIndex === -1) return res.status(404).json({ error: 'Message not found' });
+
+    const msgsToDelete = [messageId];
+    if (msgIndex + 1 < session.messages.length) {
+      const nextMsg = session.messages[msgIndex + 1];
+      if (nextMsg.role === 'model') {
+        msgsToDelete.push(nextMsg.id);
+      }
+    }
+
+    const updatedSession = await ChatSession.findOneAndUpdate(
+      { sessionId },
+      { $pull: { messages: { id: { $in: msgsToDelete } } } },
+      { new: true }
+    );
+
+    res.json(updatedSession);
+  } catch (err) {
+    console.error("Delete message error:", err);
+    res.status(500).json({ error: 'Failed to delete message' });
   }
 });
 

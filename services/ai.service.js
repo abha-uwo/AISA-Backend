@@ -1,11 +1,12 @@
-const { MongoDBAtlasVectorSearch } = require("@langchain/mongodb");
-const { HuggingFaceTransformersEmbeddings } = require("@langchain/community/embeddings/hf_transformers");
-const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
-const mongoose = require("mongoose");
-const logger = require("../utils/logger");
-const Knowledge = require("../models/Knowledge.model");
-const { Worker } = require('worker_threads');
-const path = require('path');
+import { MongoDBAtlasVectorSearch } from "@langchain/mongodb";
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import mongoose from "mongoose";
+import logger from "../utils/logger.js";
+import Knowledge from "../models/Knowledge.model.js";
+import { Worker } from 'worker_threads';
+import path from 'path';
+import * as groqService from './groq.service.js';
 
 // Initialize Groq Chat Model - REMOVED (Replaced by groq.service.js)
 // const model = new ChatGroq({ ... });
@@ -41,7 +42,7 @@ const initializeVectorStore = async () => {
 
 // Helper: Run embedding task in worker - REMOVED
 
-exports.storeDocument = async (text, docId = null) => {
+export const storeDocument = async (text, docId = null) => {
     try {
         await initializeVectorStore();
 
@@ -76,9 +77,7 @@ exports.storeDocument = async (text, docId = null) => {
     }
 };
 
-const groqService = require('./groq.service');
-
-exports.chat = async (message, activeDocContent = null) => {
+export const chat = async (message, activeDocContent = null) => {
     try {
         if (!message || typeof message !== 'string') {
             message = String(message || "");
@@ -163,7 +162,7 @@ exports.chat = async (message, activeDocContent = null) => {
 };
 
 // Initialize from DB (Now just a placeholder/connection check)
-exports.initializeFromDB = async () => {
+export const initializeFromDB = async () => {
     try {
         logger.info("Using MongoDB Atlas Vector Search. Persistence is handled natively.");
         await initializeVectorStore();
@@ -172,11 +171,11 @@ exports.initializeFromDB = async () => {
     }
 };
 
-exports.reloadVectorStore = async () => {
+export const reloadVectorStore = async () => {
     vectorStore = null;
-    await exports.initializeFromDB();
+    await initializeFromDB();
 };
 
-exports.ragChat = async (message) => {
-    return exports.chat(message);
+export const ragChat = async (message) => {
+    return chat(message);
 };

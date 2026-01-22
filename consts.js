@@ -1,1 +1,1 @@
-export const marketPlace ="https://ai-mall.onrender.com/dashboard/marketplace"
+export const dashboardUrl ="http://localhost:5173/dashboard"

@@ -4,7 +4,7 @@ import stream from 'stream';
 import util from 'util';
 import pdf from 'pdf-parse';
 import Knowledge from '../models/Knowledge.model.js';
-import * as aiService from '../services/aibaseService.js';
+import * as aiService from '../services/ai.service.js';
 import { uploadToCloudinary } from '../services/cloudinary.service.js';
 import mammoth from 'mammoth';
 import xlsx from 'xlsx';

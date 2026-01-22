@@ -1,26 +1,48 @@
-import express from 'express';
+import express from "express";
+import Agent from "../models/Agents.js";
+import User from "../models/User.js";
+import { verifyToken } from "../middleware/authorization.js";
+
 const router = express.Router();
 
-// Placeholder for agents routes to prevent 404s
-router.get('/get_my_agents', (req, res) => {
-    res.json([]);
-});
-router.post('/get_my_agents', (req, res) => {
-    res.json([]);
-});
-
-router.get('/me', (req, res) => {
-    res.json([]);
-});
-router.post('/me', (req, res) => {
-    res.json([]);
+// Get all available agents
+router.get("/", verifyToken, async (req, res) => {
+    try {
+        const agents = await Agent.find();
+        res.json(agents);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch agents" });
+    }
 });
 
-router.get('/', (req, res) => {
-    res.json([]);
+// Get user's purchased agents
+router.post("/get_my_agents", verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id || req.body.userId;
+        const user = await User.findById(userId).populate('agents');
+        if (!user) return res.status(404).json({ error: "User not found" });
+        res.json({ agents: user.agents || [] });
+    } catch (err) {
+        console.error("Error fetching user agents:", err);
+        res.status(500).json({ error: "Failed to fetch user agents" });
+    }
 });
-router.post('/', (req, res) => {
-    res.json([]);
+
+// "Buy" an agent
+router.post("/buy", verifyToken, async (req, res) => {
+    try {
+        const { agentId } = req.body;
+        const userId = req.user.id;
+
+        const user = await User.findById(userId);
+        if (!user.agents.includes(agentId)) {
+            user.agents.push(agentId);
+            await user.save();
+        }
+        res.json({ success: true, message: "Agent added to your collection" });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to purchase agent" });
+    }
 });
 
 export default router;

@@ -113,7 +113,11 @@ async function convertDocxToPdf(docxBuffer) {
     try {
         // Extract text from DOCX
         const result = await mammoth.extractRawText({ buffer: docxBuffer });
-        const text = result.value;
+        let text = result.value;
+
+        // Clean text: remove or replace problematic Unicode characters
+        // Keep only ASCII-safe characters and common Unicode ranges
+        text = text.replace(/[^\x00-\x7F\u0080-\u00FF\u0100-\u017F\u0180-\u024F]/g, '?');
 
         // Create PDF document
         const pdfDoc = await PDFDocument.create();
@@ -154,13 +158,25 @@ async function convertDocxToPdf(docxBuffer) {
                     yPosition = pageHeight - margin;
                 }
 
-                page.drawText(line, {
-                    x: margin,
-                    y: yPosition,
-                    size: fontSize,
-                    font: font,
-                    color: rgb(0, 0, 0),
-                });
+                try {
+                    page.drawText(line, {
+                        x: margin,
+                        y: yPosition,
+                        size: fontSize,
+                        font: font,
+                        color: rgb(0, 0, 0),
+                    });
+                } catch (drawError) {
+                    // If drawing fails, try with sanitized text
+                    const sanitized = line.replace(/[^\x00-\x7F]/g, '?');
+                    page.drawText(sanitized, {
+                        x: margin,
+                        y: yPosition,
+                        size: fontSize,
+                        font: font,
+                        color: rgb(0, 0, 0),
+                    });
+                }
 
                 yPosition -= lineHeight;
             }
