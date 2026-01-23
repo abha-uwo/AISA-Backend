@@ -6,7 +6,7 @@ import logger from "../utils/logger.js";
 import Knowledge from "../models/Knowledge.model.js";
 import { Worker } from 'worker_threads';
 import path from 'path';
-import * as groqService from './groq.service.js';
+import * as vertexService from './vertex.service.js';
 
 // Initialize Groq Chat Model - REMOVED (Replaced by groq.service.js)
 // const model = new ChatGroq({ ... });
@@ -94,7 +94,7 @@ export const chat = async (message, activeDocContent = null) => {
             // Wait, we need to label it "📄 From Chat-Uploaded Document". 
             // GroqService logic uses "📄 From Your Document" generally. We might want to customize labeling.
             // For now, let's just pass context. The generic "From Your Document" fits this use case well.
-            return await groqService.askGroq(message, activeDocContent);
+            return await vertexService.askVertex(message, activeDocContent);
         }
 
         // PRIORITY 2: Company Knowledge Base (RAG)
@@ -144,7 +144,7 @@ export const chat = async (message, activeDocContent = null) => {
                 contextText = "SOURCE: COMPANY KNOWLEDGE BASE\n\n" + contextText;
 
                 // PRIORITY 2: Answer from Company RAG
-                return await groqService.askGroq(message, contextText);
+                return await vertexService.askVertex(message, contextText);
 
             } else {
                 logger.info(`[RAG] No relevant chunks found (All scores < ${THRESHOLD}). Fallback to General Knowledge.`);
@@ -152,8 +152,8 @@ export const chat = async (message, activeDocContent = null) => {
         }
 
         // PRIORITY 3: Answer from General Knowledge (Explicit No Context)
-        logger.info("[Chat Routing] Answering from General Knowledge (Groq).");
-        return await groqService.askGroq(message, null);
+        logger.info("[Chat Routing] Answering from General Knowledge (Vertex).");
+        return await vertexService.askVertex(message, null);
 
     } catch (error) {
         logger.error(`Chat Handling Error: ${error.message}`);
