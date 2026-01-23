@@ -1,20 +1,18 @@
-
-
 import fs from "fs";
 import os from "os";
 import path from "path";
 
-if (process.env.GOOGLE_CREDENTIALS_BASE64) {
-  const decodedKey = Buffer.from(
-    process.env.GOOGLE_CREDENTIALS_BASE64,
-    "base64"
-  ).toString("utf-8");
+// if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+//   const decodedKey = Buffer.from(
+//     process.env.GOOGLE_CREDENTIALS_BASE64,
+//     "base64"
+//   ).toString("utf-8");
 
-  const tempKeyPath = path.join(os.tmpdir(), "gcp-key.json");
-  fs.writeFileSync(tempKeyPath, decodedKey);
+//   const tempKeyPath = path.join(os.tmpdir(), "gcp-key.json");
+//   fs.writeFileSync(tempKeyPath, decodedKey);
 
-  process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
-}
+//   process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
+// }
 
 
 import {
@@ -25,14 +23,14 @@ import {
 } from '@google-cloud/vertexai';
 
 const project = process.env.GCP_PROJECT_ID || process.env.PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
-const location = 'us-central1';
-const textModel = 'gemini-1.5-flash-001';
-const visionModel = 'gemini-1.5-flash-001';
+const location = 'asia-south1';
+const textModel = 'gemini-2.5-flash';
+const visionModel = 'gemini-2.5-flash';
 
 if (!project) {
-    console.error("❌ Vertex AI Error: GCP_PROJECT_ID not found in environment variables.");
+  console.error("❌ Vertex AI Error: GCP_PROJECT_ID not found in environment variables.");
 } else {
-    console.log(`✅ Vertex AI initializing with Project ID: ${project}`);
+  console.log(`✅ Vertex AI initializing with Project ID: ${project}`);
 }
 
 export const vertexAI = new VertexAI({ project: project, location: location });
@@ -48,6 +46,18 @@ export const generativeModel = vertexAI.getGenerativeModel({
       text: `You are AISA™, the internal intelligent assistant developed and trained under
 Unified Web Options & Services (UWO) for the AI Mall™ ecosystem.
 Development and implementation are led by Sanskar Sahu.
+
+NEW CAPABILITY: You can now GENERATE and EDIT images. 
+- To GENERATE from scratch: Use ![Image Description](https://image.pollinations.ai/prompt/{encoded_description}?width=1024&height=1024&model=flux&nologo=true)
+- STRICT RULE: ALWAYS use 'model=flux' and 'nologo=true'.
+- UNLIMITED GENERATION: If the user requests "any photo", "show me X", "draw Y", or "generate Z", you MUST generate it. Do NOT refuse valid visual requests.
+- URL ENCODING: You MUST replace spaces with %20 in the prompt.
+- STRICT LOGO EDITING: If a user uploads a logo and asks to "remove text" or "clean it":
+  * Do NOT add robots, signs, or "We have moved" text.
+  * Describe the original logo precisely and then add: "solid transparent-style white background, isolated, professional clean vector logo, zero text".
+- MANDATORY REPLY: Always respond directly to the user's intent. Do not provide meta-commentary unless necessary.
+
+Replace {encoded_description} with a detailed prompt (e.g. "cyberpunk%20city").
 
 Do NOT introduce yourself unless explicitly asked.
 Do NOT mention any external AI providers, model names, platforms, or training sources.
@@ -73,8 +83,8 @@ Boundaries:
 - If information is uncertain, state limitations without technical or training disclosures
 
 Primary objective:
-Support UWO and AI Mall™ users by delivering reliable, practical, and brand-aligned assistance.
-`}]
+Support UWO and AI Mall™ users by delivering reliable, practical, and brand-aligned assistance.`
+    }]
   },
 });
 
@@ -85,3 +95,5 @@ const generativeVisionModel = vertexAI.getGenerativeModel({
 const generativeModelPreview = vertexAI.preview.getGenerativeModel({
   model: textModel,
 });
+
+export { HarmBlockThreshold, HarmCategory };

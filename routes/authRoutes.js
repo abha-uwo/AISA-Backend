@@ -44,6 +44,14 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "User Already Exists With This Email" });
     }
 
+    // Password Validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character."
+      });
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -101,13 +109,13 @@ router.post("/login", async (req, res) => {
     // Find user
     const user = await UserModel.findOne({ email });
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Account not found with this email" });
     }
 
     // Compare hashed password
     const isCorrect = await bcrypt.compare(password, user.password);
     if (!isCorrect) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Incorrect password" });
     }
 
     // Generate token
@@ -248,6 +256,34 @@ router.post("/reset-password/:token", async (req, res) => {
   } catch (err) {
     console.error("Reset Password Error:", err);
     res.status(500).json({ error: "Server error during reset password" });
+  }
+});
+
+// ====================== RESEND VERIFICATION CODE =======================
+router.post("/resend-code", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "User is already verified" });
+    }
+
+    const verificationCode = generateOTP();
+    user.verificationCode = verificationCode;
+    await user.save();
+
+    await sendVerificationEmail(user.email, user.name, verificationCode);
+
+    res.status(200).json({ message: "Verification code resent successfully" });
+
+  } catch (err) {
+    console.error("Resend Code Error:", err);
+    res.status(500).json({ error: "Server error during resend code" });
   }
 });
 

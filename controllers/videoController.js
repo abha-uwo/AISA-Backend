@@ -1,5 +1,7 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
+import { GoogleAuth } from 'google-auth-library';
+import { uploadToCloudinary } from '../services/cloudinary.service.js';
 
 // Video generation using external APIs (e.g., Replicate, Runway, or similar)
 export const generateVideo = async (req, res) => {
@@ -8,9 +10,9 @@ export const generateVideo = async (req, res) => {
     const userId = req.user?.id;
 
     if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Prompt is required and must be a string' 
+      return res.status(400).json({
+        success: false,
+        message: 'Prompt is required and must be a string'
       });
     }
 
@@ -18,7 +20,7 @@ export const generateVideo = async (req, res) => {
 
     // Example using Replicate API for video generation
     // You can replace this with your preferred video generation service
-    const videoUrl = await generateVideoWithReplicate(prompt, duration, quality);
+    const videoUrl = await generateVideoFromPrompt(prompt, duration, quality);
 
     if (!videoUrl) {
       throw new Error('Failed to generate video');
@@ -36,58 +38,78 @@ export const generateVideo = async (req, res) => {
 
   } catch (error) {
     logger.error(`[VIDEO ERROR] ${error.message}`);
-    return res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to generate video' 
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate video'
     });
   }
 };
 
-// Function to generate video using Replicate
-const generateVideoWithReplicate = async (prompt, duration, quality) => {
+// Function to generate video using Replicate or Fallback
+// Function to generate video using Vertex AI or Fallback
+export const generateVideoFromPrompt = async (prompt, duration, quality) => {
   try {
-    const replicateApiKey = process.env.REPLICATE_API_KEY;
+    logger.info('[VIDEO] Attempting generation via Vertex AI (text-to-video)...');
 
-    if (!replicateApiKey) {
-      logger.warn('[VIDEO] Replicate API key not configured. Using mock video.');
-      // Return a mock video URL for testing
-      return 'https://via.placeholder.com/320x240/1a1a1a/fff?text=Mock+Video';
-    }
+    const auth = new GoogleAuth({
+      scopes: 'https://www.googleapis.com/auth/cloud-platform',
+      projectId: process.env.GCP_PROJECT_ID || process.env.PROJECT_ID
+    });
+    const client = await auth.getClient();
+    const projectId = await auth.getProjectId();
+    const accessTokenResponse = await client.getAccessToken();
+    const token = accessTokenResponse.token || accessTokenResponse;
 
-    // Using Replicate's video generation model
-    const model = 'cjwbw/damo-text-to-video'; // Example model
-    
+    // Use 'text-to-video' model (Imagen 2)
+    const modelId = 'text-to-video';
+    const location = 'us-central1'; // Vertex AI Video models are often in us-central1
+    const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predict`;
+
     const response = await axios.post(
-      'https://api.replicate.com/v1/predictions',
+      endpoint,
       {
-        version: model,
-        input: {
-          prompt: prompt,
-          num_frames: Math.ceil(duration * 24), // 24 fps
-          height: quality === 'high' ? 1080 : 720,
-          width: quality === 'high' ? 1920 : 1280,
+        instances: [{ prompt: prompt }],
+        parameters: {
+          videoLengthSeconds: duration || 5,
+          sampleCount: 1
         }
       },
       {
         headers: {
-          'Authorization': `Token ${replicateApiKey}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
-    if (response.data.status === 'processing') {
-      // Poll for result
-      const predictionId = response.data.id;
-      return await pollReplicateResult(predictionId, replicateApiKey);
+    if (response.data && response.data.predictions && response.data.predictions[0]) {
+      // Assuming response contains base64 string directly or implicitly structure
+      // Structure check: predictions[0].bytesBase64Encoded ??
+      // Wait, response format for text-to-video often returns a struct with 'video' or 'bytesBase64Encoded'
+      // Let's safe check keys.
+      const prediction = response.data.predictions[0];
+      // Common patterns: prediction.bytesBase64Encoded, prediction.video.bytesBase64Encoded, or just string if configured
+      // We'll inspect or try 
+      const base64Data = prediction.bytesBase64Encoded || prediction.video?.bytesBase64Encoded || (typeof prediction === 'string' ? prediction : null);
+
+      if (base64Data) {
+        const buffer = Buffer.from(base64Data, 'base64');
+        // Upload to Cloudinary
+        const uploadResult = await uploadToCloudinary(buffer, {
+          resource_type: 'video',
+          folder: 'aisa_generated_videos'
+        });
+        logger.info(`[VERTEX VIDEO] Uploaded to Cloudinary: ${uploadResult.secure_url}`);
+        return uploadResult.secure_url;
+      }
     }
 
-    return response.data.output?.[0] || null;
+    throw new Error('Vertex AI did not return a valid video payload.');
 
   } catch (error) {
-    logger.error(`[REPLICATE ERROR] ${error.message}`);
-    // Fallback: return a placeholder
-    return 'https://via.placeholder.com/320x240/1a1a1a/fff?text=Video+Generation+Error';
+    logger.warn(`[VERTEX VIDEO ERROR] ${error.message}. Falling back to Pollinations.`);
+    // Fallback: Pollinations
+    return await generateVideoWithPollinations(prompt, duration, quality);
   }
 };
 
@@ -126,7 +148,7 @@ export const generateVideoWithPollinations = async (prompt, duration, quality) =
   try {
     // Pollinations offers free video generation via API
     const videoUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${quality === 'high' ? 1920 : 1280}&height=${quality === 'high' ? 1080 : 720}&video=true`;
-    
+
     logger.info(`[POLLINATIONS VIDEO] Generated: ${videoUrl}`);
     return videoUrl;
   } catch (error) {
@@ -141,9 +163,9 @@ export const getVideoStatus = async (req, res) => {
     const { videoId } = req.params;
 
     if (!videoId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Video ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Video ID is required'
       });
     }
 
@@ -158,9 +180,9 @@ export const getVideoStatus = async (req, res) => {
 
   } catch (error) {
     logger.error(`[VIDEO STATUS ERROR] ${error.message}`);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Failed to get video status' 
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get video status'
     });
   }
 };

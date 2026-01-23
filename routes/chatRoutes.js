@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import express from "express"
 import ChatSession from "../models/ChatSession.js"
-import { generativeModel } from "../config/gemini.js";
+import { generativeModel } from "../config/vertex.js";
 import userModel from "../models/User.js";
 import { verifyToken } from "../middleware/authorization.js";
 import { uploadToCloudinary } from "../services/cloudinary.service.js";
@@ -12,12 +12,13 @@ import Reminder from "../models/Reminder.js";
 import { requiresWebSearch, extractSearchQuery, processSearchResults, getWebSearchSystemInstruction } from "../utils/webSearch.js";
 import { performWebSearch } from "../services/searchService.js";
 import { convertFile } from "../utils/fileConversion.js";
+import { generateVideoFromPrompt } from "../controllers/videoController.js";
 
 
 const router = express.Router();
 // Get all chat sessions (summary)
 router.post("/", verifyToken, async (req, res) => {
-  const { content, history, systemInstruction, image, document, language } = req.body;
+  const { content, history, systemInstruction, image, video, document, language } = req.body;
 
   try {
     // Detect mode based on content and attachments
@@ -26,6 +27,8 @@ router.post("/", verifyToken, async (req, res) => {
     else if (image) allAttachments.push(image);
     if (Array.isArray(document)) allAttachments.push(...document);
     else if (document) allAttachments.push(document);
+    if (Array.isArray(video)) allAttachments.push(...video);
+    else if (video) allAttachments.push(video);
 
     const detectedMode = detectMode(content, allAttachments);
     const modeSystemInstruction = getModeSystemInstruction(detectedMode, language || 'English', {
@@ -45,7 +48,12 @@ router.post("/", verifyToken, async (req, res) => {
     }
 
     if (finalSystemInstruction) {
-      parts.push({ text: `System Instruction: ${finalSystemInstruction}` });
+      parts.push({
+        text: `System Instruction: ${finalSystemInstruction}
+      
+      IMPORTANT: If the user explicitly asks to GENERATE A VIDEO (e.g. "create a video of...", "animate this..."), you must output ONLY this JSON object:
+      {"action": "generate_video", "prompt": "detailed visual description for the video"}
+      Do not output any other text or explanation if you are triggering this action.` });
     }
 
     // Add conversation history if available
@@ -75,6 +83,27 @@ router.post("/", verifyToken, async (req, res) => {
         inlineData: {
           mimeType: image.mimeType,
           data: image.base64Data
+        }
+      });
+    }
+
+    // Handle Multiple Videos
+    if (Array.isArray(video)) {
+      video.forEach(vid => {
+        if (vid.mimeType && vid.base64Data) {
+          parts.push({
+            inlineData: {
+              mimeType: vid.mimeType,
+              data: vid.base64Data
+            }
+          });
+        }
+      });
+    } else if (video && video.mimeType && video.base64Data) {
+      parts.push({
+        inlineData: {
+          mimeType: video.mimeType,
+          data: video.base64Data
         }
       });
     }
@@ -275,7 +304,14 @@ router.post("/", verifyToken, async (req, res) => {
     const attemptGeneration = async () => {
       const streamingResult = await generativeModel.generateContentStream({ contents: [contentPayload] });
       const response = await streamingResult.response;
-      return response.text();
+      if (typeof response.text === 'function') {
+        return response.text();
+      } else if (response.candidates && response.candidates.length > 0 && response.candidates[0].content && response.candidates[0].content.parts && response.candidates[0].content.parts.length > 0) {
+        return response.candidates[0].content.parts[0].text;
+      } else {
+        console.warn("Unexpected response format:", JSON.stringify(response));
+        return "";
+      }
     };
 
     while (retryCount < maxRetries) {
@@ -303,6 +339,29 @@ router.post("/", verifyToken, async (req, res) => {
       detectedMode,
       language: detectedLanguage || language || 'English'
     };
+
+    // Check for Video Generation Action
+    try {
+      // Regex to find JSON block if mixed with text, or just parse if full json
+      const jsonMatch = reply.match(/\{[\s\S]*"action":\s*"generate_video"[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        if (data.action === 'generate_video' && data.prompt) {
+          console.log(`[VIDEO GEN] Detected action for prompt: ${data.prompt}`);
+          const videoUrl = await generateVideoFromPrompt(data.prompt, 5, 'medium');
+          if (videoUrl) {
+            finalResponse.videoUrl = videoUrl;
+            finalResponse.reply = `I have generated a video for you based on: "${data.prompt}"`;
+            // Clean up the JSON from the reply if it was mixed (though we asked for ONLY JSON)
+            // If strict JSON, reply is replaced.
+          } else {
+            finalResponse.reply = "I attempted to generate a video but encountered an error. Please try again.";
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[VIDEO GEN] Failed to parse or execute video action:", e);
+    }
 
     if (voiceConfirmation) {
       finalResponse.voiceConfirmation = voiceConfirmation;
