@@ -49,8 +49,8 @@ const userSchema = new mongoose.Schema({
         // General Settings
         general: {
             language: { type: String, default: 'English' },
-            theme: { type: String, enum: ['Light', 'Dark', 'System'], default: 'System' },
-            responseSpeed: { type: String, enum: ['Fast', 'Balanced', 'Detailed'], default: 'Balanced' },
+            theme: { type: String, enum: ['Light', 'Dark', 'System', 'light', 'dark', 'system'], default: 'System' },
+            responseSpeed: { type: String, enum: ['Fast', 'Balanced', 'Detailed', 'fast', 'balanced', 'detailed'], default: 'Balanced' },
             screenReader: { type: Boolean, default: false },
             highContrast: { type: Boolean, default: false }
         },
@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
         personalization: {
             fontStyle: {
                 type: String,
-                enum: ['Default', 'Serif', 'Mono', 'Sans', 'Rounded'],
+                enum: ['Default', 'Serif', 'Mono', 'Sans', 'Rounded', 'default', 'serif', 'mono', 'sans', 'rounded'],
                 default: 'Default'
             },
             characteristics: {
@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
             },
             emojiUsage: {
                 type: String,
-                enum: ['None', 'Minimal', 'Moderate', 'Expressive'],
+                enum: ['None', 'Minimal', 'Moderate', 'Expressive', 'none', 'minimal', 'moderate', 'expressive'],
                 default: 'Moderate'
             },
             fontSize: { type: String, default: 'Medium' }, // Added to match frontend data structure
